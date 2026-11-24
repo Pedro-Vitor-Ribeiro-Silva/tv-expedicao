@@ -133,7 +133,6 @@
   }
   .relogio .logo { height: clamp(36px, 7.5vh, 96px); width: auto; display: block; }
   .relogio .hora { justify-self: end; }
-  .relogio .janela { display: block; margin-top: 4px; font: 600 clamp(11px, 1.6vh, 19px)/1.1 var(--f-texto); text-transform: none; letter-spacing: 0; opacity: .9; }
   .relogio .hora { font: 800 clamp(36px, 8vh, 104px)/1 var(--f-display); font-variant-numeric: tabular-nums; }
   .relogio .data { font: 700 clamp(18px, 3.2vh, 40px)/1.05 var(--f-display); text-transform: uppercase; letter-spacing: .04em; text-align: left; margin-right: auto; }
 
@@ -512,16 +511,9 @@ function relogio() {
   const d = new Date();
   $('hora').textContent = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
   $('data').innerHTML = d.toLocaleDateString('pt-BR', { weekday: 'long', timeZone: 'America/Sao_Paulo' }) + '<br>' +
-    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' }) +
-    `<span class="janela">Hoje vai até ${fimJanela()}</span>`;
+    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' });
 }
 
-// fim da janela do "hoje": próximo corte das 15h (ex.: "25/11 às 15h")
-function fimJanela() {
-  const sp = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
-  if (sp.getHours() >= 15) sp.setDate(sp.getDate() + 1);
-  return `${String(sp.getDate()).padStart(2, '0')}/${String(sp.getMonth() + 1).padStart(2, '0')} às 15h`;
-}
 
 // ============================================================== mensagem do admin
 const horaSP = iso => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
