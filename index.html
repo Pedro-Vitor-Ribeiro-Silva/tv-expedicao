@@ -667,7 +667,8 @@ function vozPtBr() {
   const vozes = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
   const pt = vozes.filter(v => /^pt(-|_)BR/i.test(v.lang));
   const local = pt.filter(v => v.localService);
-  return local.find(v => /francisca|thalita|maria|daniel|antonio/i.test(v.name)) || local[0]
+  const porNome = lista => ['francisca', 'maria', 'thalita', 'luciana', 'daniel', 'antonio'].map(n => lista.find(v => v.name.toLowerCase().includes(n))).find(Boolean);
+  return porNome(local) || local[0]
     || pt.find(v => /google/i.test(v.name)) || pt[0]
     || vozes.find(v => /^pt/i.test(v.lang)) || null;
 }
