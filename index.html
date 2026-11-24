@@ -735,15 +735,16 @@ function desenharDiag() {
     box.id = 'diag';
     box.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:60;max-width:min(720px,calc(100vw - 32px));background:#141414;color:#fff;' +
       'font:500 16px/1.35 system-ui,sans-serif;padding:14px 18px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5)';
+    box.innerHTML = '<div id="diag-info"></div><button id="diag-testar" type="button" style="margin-top:10px;font:700 18px system-ui;padding:10px 18px;border:0;border-radius:8px;background:#e8a200;cursor:pointer">▶ Testar som e voz</button>';
     document.body.appendChild(box);
-    box.addEventListener('click', e => { if (e.target.id === 'diag-testar') { const ms = tocarAviso(); setTimeout(() => falar('Teste de voz do painel da expedição.'), ms); } });
+    document.getElementById('diag-testar').addEventListener('click', () => { const ms = tocarAviso(); setTimeout(() => falar('Teste de voz do painel da expedição.'), ms); });
   }
   const ss = !!window.speechSynthesis;
   const vozes = ss ? speechSynthesis.getVoices() : [];
   const pt = vozes.filter(v => /^pt/i.test(v.lang)).map(v => v.name + (v.localService ? '' : ' (online)'));
   const v = vozPtBr();
   const linha = (rot, val, ok) => `<div>${ok === true ? '✅' : ok === false ? '❌' : '•'} <b>${rot}:</b> ${esc(val)}</div>`;
-  box.innerHTML = `<div style="font-weight:800;margin-bottom:6px">Diagnóstico de som e voz</div>` +
+  document.getElementById('diag-info').innerHTML = `<div style="font-weight:800;margin-bottom:6px">Diagnóstico de som e voz</div>` +
     linha('Som (toque)', audio ? audio.state : 'ainda não iniciado', audio ? audio.state === 'running' : null) +
     linha('Leitura do navegador', ss ? 'existe' : 'não existe', ss) +
     linha('Leitura do Fully Kiosk', window.fully && typeof fully.textToSpeech === 'function' ? 'existe' : 'não', null) +
@@ -751,8 +752,7 @@ function desenharDiag() {
     linha('Voz escolhida', v ? v.name : '—', !!v) +
     linha('Última tentativa', vozDiag.ultimaTentativa ? `${vozDiag.ultimaTentativa} (${vozDiag.metodo})` : '—', null) +
     linha('Começou a falar', vozDiag.ultimoInicio || '—', vozDiag.ultimoInicio ? true : null) +
-    linha('Erro', vozDiag.ultimoErro || 'nenhum', vozDiag.ultimoErro ? false : null) +
-    `<button id="diag-testar" style="margin-top:10px;font:700 18px system-ui;padding:10px 18px;border:0;border-radius:8px;background:#e8a200;cursor:pointer">▶ Testar som e voz</button>`;
+    linha('Erro', vozDiag.ultimoErro || 'nenhum', vozDiag.ultimoErro ? false : null);
 }
 if (DIAG) { setInterval(desenharDiag, 1000); if (window.speechSynthesis) speechSynthesis.addEventListener?.('voiceschanged', desenharDiag); }
 // ============================================================== início
