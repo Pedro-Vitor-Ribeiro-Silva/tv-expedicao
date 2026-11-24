@@ -328,7 +328,9 @@ const PLATAFORMAS = [
   { chave: 'tiktok', nome: 'TikTok Shop', cor: 'var(--tiktok)' }
 ];
 // Depois de quanto tempo sem atualizar uma fonte é considerada "parada"
-const LIMITE_MIN = { upseller: 3, ml: 6 };
+// Minutos sem atualização antes de mostrar o aviso vermelho.
+// ML recarrega a cada 30 min, então só avisa se passar de uma rodada perdida.
+const LIMITE_MIN = { upseller: 10, ml: 70 };
 const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
 
 const DEMO = new URLSearchParams(location.search).has('demo');
@@ -484,8 +486,9 @@ function desenharAvisos() {
     const nome = ml ? `Mercado Livre ${apelido(estado.contas.find(c => 'ml:' + c.conta_id === f.fonte) || { nome: f.fonte })}` : 'UpSeller';
     const min = f.atualizado_em ? (agora - new Date(f.atualizado_em)) / 60000 : Infinity;
     const limite = ml ? LIMITE_MIN.ml : LIMITE_MIN.upseller;
-    if (min > limite) avisos.push(`⚠ ${nome}: dados parados há ${min === Infinity ? 'muito tempo' : Math.round(min) + ' min'}. Verifique o navegador da expedição.`);
-    else if (f.erro) avisos.push(`⚠ ${nome}: ${f.erro}`);
+    // Erros passageiros (outro navegador resolve no ciclo seguinte) não aparecem:
+    // só avisa quando a fonte fica sem nenhuma atualização boa além do limite.
+    if (min > limite) avisos.push(`⚠ ${nome}: sem atualizar há ${min === Infinity ? 'muito tempo' : Math.round(min) + ' min'}. Verifique o navegador da expedição.${f.erro ? ' — Último erro: ' + f.erro : ''}`);
   }
   if (!estado.fontes.some(f => f.fonte === 'upseller')) avisos.push('⚠ UpSeller ainda não enviou dados. Verifique a extensão no navegador da expedição.');
   $('avisos').innerHTML = avisos.map(a => `<div class="aviso">${esc(a)}</div>`).join('');
