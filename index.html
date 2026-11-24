@@ -17,6 +17,7 @@
     --etiqueta: #fbfaf6;
     --tinta: #141414;
     --tinta-suave: #5b5650;
+    --tinta-forte-codigo:#0c0c0c;
     --linha: #d9d4ca;
     --ml: #ffe600;
     --shopee: #ee4d2d;
@@ -140,8 +141,8 @@
     padding: 0 clamp(10px, 1.1vw, 20px);
     border-left: 2px solid var(--linha);
   }
-  .cod-conta { font: 700 clamp(10px, 1.3vh, 15px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-suave); white-space: nowrap; }
-  .cod code { font: 700 clamp(14px, 2.1vh, 26px)/1.1 var(--f-mono); letter-spacing: .08em; }
+  .cod-conta { font: 700 clamp(11px, 1.6vh, 19px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-forte-codigo); white-space: nowrap; }
+  .cod code { font: 800 clamp(20px, 3.4vh, 42px)/1.05 var(--f-mono); letter-spacing: .08em; }
 
   /* ---------------------------------------------------------------- relógio */
   .relogio {
@@ -165,7 +166,9 @@
     display: flex; justify-content: space-between; align-items: baseline;
   }
   .caixa h2 small { font: 600 .55em var(--f-texto); text-transform: none; letter-spacing: 0; color: var(--tinta-suave); }
-  .coletas { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.5fr 1fr 1fr; }
+  .coletas { flex: 1; min-height: 0; display: grid; grid-auto-flow: column; grid-auto-columns: minmax(0, 1fr); }
+  .col h3.conta-ml { font-size: clamp(12px, 1.75vh, 21px); letter-spacing: .02em; border-bottom: 2px solid var(--ml); padding-bottom: 3px; margin-bottom: 4px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; display: block; }
+  .col .coleta { flex-wrap: wrap; row-gap: 2px; }
   .col { padding: clamp(6px, .9vh, 12px) clamp(8px, .9vw, 14px); border-left: 2px solid var(--linha); overflow: hidden; display: flex; flex-direction: column; gap: clamp(3px, .5vh, 7px); }
   .col:first-child { border-left: 0; }
   .col h3 { margin: 0 0 2px; font: 800 clamp(13px, 2vh, 24px)/1 var(--f-display); text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
@@ -241,7 +244,8 @@
     .campo.pendente { padding-left: 10px; }
     .valor { font-size: 44px; }
     .campo.pendente .valor { font-size: 52px; }
-    .coletas { grid-template-columns: 1fr; }
+    .coletas { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
+    .col:nth-child(odd) { border-left: 0; }
     .col { border-left: 0; border-top: 2px solid var(--linha); }
     .col:first-child { border-top: 0; }
     .full { max-height: none; }
@@ -272,11 +276,7 @@
 
     <article class="etiqueta caixa">
       <h2>Coletas de hoje <small id="coletas-sub"></small></h2>
-      <div class="coletas">
-        <div class="col" id="col-ml"></div>
-        <div class="col" id="col-shopee"></div>
-        <div class="col" id="col-tiktok"></div>
-      </div>
+      <div class="coletas" id="coletas"></div>
     </article>
 
     <article class="etiqueta caixa">
@@ -439,30 +439,19 @@ function classeColetaML(c) {
 function desenharColetas() {
   const agora = minutos(agoraSP().hm);
 
-  // Mercado Livre: coletas lidas de cada conta
-  const ml = estado.contas.flatMap(c => (c.coletas || []).map(x => ({ ...x, conta: apelido(c) })))
-    .sort((a, b) => minutos(a.inicio) - minutos(b.inicio));
-  let proximaMarcada = false;
-  const linhasML = ml.map(c => {
-    let [cls, st] = classeColetaML(c);
-    if (!cls && !proximaMarcada) { cls = 'proxima'; proximaMarcada = true; }
-    else if (cls === 'atrasada' && !proximaMarcada) { proximaMarcada = true; }
-    return `<div class="coleta ${cls}"><span>${esc(c.inicio)}–${esc(c.fim)}</span><span class="conta">${esc(c.conta)}</span><span class="st">${st}</span></div>`;
-  }).join('');
-  $('col-ml').innerHTML = `<h3><span class="ponto" style="background:var(--ml)"></span>ML</h3>${linhasML || '<span class="vazio">Nenhuma coleta informada pelo ML.</span>'}`;
-
-  // Shopee / TikTok: horários fixos configurados
-  for (const [chave, sigla, cor] of [['shopee', 'SHP', 'var(--shopee)'], ['tiktok', 'TTK', 'var(--tiktok)']]) {
-    const h = (estado.horarios.find(x => x.plataforma === chave)?.horarios || []).slice().sort((a, b) => minutos(a) - minutos(b));
-    let marcada = false;
-    const linhas = h.map(hm => {
-      let cls = '', st = 'prevista';
-      if (minutos(hm) < agora) { cls = 'feita'; st = 'passou'; }
-      else if (!marcada) { cls = 'proxima'; marcada = true; }
-      return `<div class="coleta ${cls}"><span>${esc(hm)}</span><span class="st">${st}</span></div>`;
+  // Mercado Livre: uma coluna por conta, lado a lado
+  const contas = estado.contas.slice().sort((a, b) => apelido(a).localeCompare(apelido(b), 'pt-BR'));
+  $('coletas').innerHTML = contas.map(conta => {
+    const lista = (conta.coletas || []).slice().sort((a, b) => minutos(a.inicio) - minutos(b.inicio));
+    let proximaMarcada = false;
+    const linhas = lista.map(c => {
+      let [cls, st] = classeColetaML(c);
+      if (!cls && !proximaMarcada) { cls = 'proxima'; proximaMarcada = true; }
+      else if (cls === 'atrasada' && !proximaMarcada) { proximaMarcada = true; }
+      return `<div class="coleta ${cls}"><span>${esc(c.inicio)}–${esc(c.fim)}</span><span class="st">${st}</span></div>`;
     }).join('');
-    $('col-' + chave).innerHTML = `<h3><span class="ponto" style="background:${cor}"></span>${sigla}</h3>${linhas || '<span class="vazio">Sem horário. Configure em ⚙.</span>'}`;
-  }
+    return `<div class="col"><h3 class="conta-ml" title="${esc(conta.nome || '')}">${esc(apelido(conta))}</h3>${linhas || '<span class="vazio">Sem coleta hoje.</span>'}</div>`;
+  }).join('') || '<div class="col"><span class="vazio">Nenhuma conta do ML enviou dados ainda.</span></div>';
 }
 
 function desenharFull() {
