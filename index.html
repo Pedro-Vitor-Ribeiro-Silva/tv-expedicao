@@ -89,47 +89,26 @@
   .plat-shopee .fita { background: var(--shopee); color: #fff; }
   .plat-tiktok .fita { background: var(--tiktok); }
 
+  /* seis quadros por plataforma, como no desenho do chefe */
   .corpo {
     flex: 1; min-height: 0;
     display: grid;
-    grid-template-columns: 1fr 1fr 1fr 1.3fr 1fr;
-    gap: clamp(6px, .8vw, 14px);
-    padding: clamp(6px, 1vh, 14px) clamp(12px, 1.4vw, 22px) 0;
+    grid-template-columns: repeat(6, minmax(0, 1fr));
+    gap: clamp(6px, .7vw, 12px);
+    padding: clamp(6px, 1vh, 14px) clamp(10px, 1.1vw, 18px);
   }
-  .campo { display: flex; flex-direction: column; justify-content: center; min-width: 0; border-left: 2px solid var(--linha); padding-left: clamp(6px, .7vw, 12px); }
-  .campo:first-child { border-left: 0; padding-left: 0; }
-  .rotulo { font: 700 clamp(11px, 1.5vh, 18px)/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-suave); }
-  .valor { font: 800 clamp(30px, 7.2vh, 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; }
-  .nota { font: 500 clamp(10px, 1.3vh, 15px)/1.1 var(--f-texto); color: var(--tinta-suave); margin-top: 2px; }
-  /* assinatura: bloco preto invertido, como o código de triagem da etiqueta */
-  .campo.pendente {
-    background: var(--tinta); color: var(--etiqueta);
-    border: 0; border-radius: 4px; padding: clamp(4px, .8vh, 10px) clamp(10px, 1vw, 16px);
-    align-self: stretch;
+  .campo {
+    display: flex; flex-direction: column; justify-content: space-between; min-width: 0;
+    border: 3px solid var(--tinta); border-radius: clamp(8px, 1.2vh, 16px);
+    padding: clamp(5px, .8vh, 10px) clamp(6px, .6vw, 12px);
+    background: #fff; text-align: center;
   }
-  .campo.pendente .rotulo { color: #cfcac0; }
-  .campo.pendente .valor { font-size: clamp(36px, 9vh, 120px); }
-  .campo.pendente.zerado { background: var(--ok); }
-
-  /* progresso de bipagem desenhado como código de barras */
-  .barras {
-    height: clamp(10px, 1.8vh, 20px);
-    margin: clamp(6px, .9vh, 12px) clamp(12px, 1.4vw, 22px);
-    background:
-      repeating-linear-gradient(90deg, var(--linha) 0 2px, transparent 2px 4px, var(--linha) 4px 7px, transparent 7px 9px);
-    position: relative; border-radius: 2px;
-  }
-  .barras i {
-    position: absolute; inset: 0 auto 0 0;
-    background: repeating-linear-gradient(90deg, var(--tinta) 0 2px, transparent 2px 4px, var(--tinta) 4px 7px, transparent 7px 9px);
-    transition: width .8s ease;
-  }
-  .barras span {
-    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
-    background: var(--etiqueta); padding-left: 8px;
-    font: 600 clamp(11px, 1.5vh, 17px)/1 var(--f-mono);
-  }
-  /* faixa preta com letras brancas: os códigos de coleta saltam aos olhos */
+  .rotulo { font: 700 clamp(11px, 1.5vh, 18px)/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; color: var(--tinta-suave); }
+  .valor { font: 800 clamp(26px, min(7.5vh, 3.15vw), 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; margin: auto 0; white-space: nowrap; }
+  /* quadros de atenção: vermelhos quando há algo */
+  .campo.atencao.tem { background: #ffd0cc; border-color: var(--alerta); }
+  .campo.atencao.tem .valor, .campo.atencao.tem .rotulo { color: var(--alerta); }
+  .campo.enviado { background: #b8efc4; border-color: var(--tinta); }  /* faixa preta com letras brancas: os códigos de coleta saltam aos olhos */
   .codigos {
     background: #000; color: #fff;
     padding: clamp(5px, .8vh, 10px) clamp(12px, 1.4vw, 22px);
@@ -154,6 +133,7 @@
   }
   .relogio .logo { height: clamp(36px, 7.5vh, 96px); width: auto; display: block; }
   .relogio .hora { justify-self: end; }
+  .relogio .janela { display: block; margin-top: 4px; font: 600 clamp(11px, 1.6vh, 19px)/1.1 var(--f-texto); text-transform: none; letter-spacing: 0; opacity: .9; }
   .relogio .hora { font: 800 clamp(36px, 8vh, 104px)/1 var(--f-display); font-variant-numeric: tabular-nums; }
   .relogio .data { font: 700 clamp(18px, 3.2vh, 40px)/1.05 var(--f-display); text-transform: uppercase; letter-spacing: .04em; text-align: left; margin-right: auto; }
 
@@ -243,25 +223,6 @@
   }
   @media (prefers-reduced-motion: reduce) { .msg-cartao, .msg-cartao .fita { animation: none; } }
 
-  /* aviso temporário no card: etiqueta repetida ou de outra plataforma */
-  .alerta-card {
-    position: absolute; left: 3%; right: 3%; top: 50%; z-index: 5;
-    transform: translateY(-38%);
-    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px clamp(10px, 1.2vw, 20px);
-    padding: clamp(8px, 1.3vh, 16px) clamp(14px, 1.6vw, 26px);
-    border-radius: var(--raio); color: #fff;
-    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
-    animation: alerta-entra .35s ease-out, alerta-pisca 1s steps(2, jump-none) .35s 4;
-  }
-  .alerta-card.duplicado { background: #c25a00; }
-  .alerta-card.plataforma_errada { background: var(--alerta); }
-  .alerta-card .icone { grid-row: span 2; font: 800 clamp(30px, 6vh, 72px)/1 var(--f-display); }
-  .alerta-card .titulo { font: 800 clamp(20px, 3.8vh, 46px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
-  .alerta-card .detalhe { font: 600 clamp(14px, 2.2vh, 26px)/1.15 var(--f-texto); }
-  .alerta-card .detalhe code { font: 700 1.1em var(--f-mono); letter-spacing: .04em; }
-  @keyframes alerta-entra { from { opacity: 0; transform: translateY(-38%) scale(.92); } }
-  @keyframes alerta-pisca { 50% { filter: brightness(1.35); } }
-  @media (prefers-reduced-motion: reduce) { .alerta-card { animation: none; } }
 
   .carregando { color: var(--etiqueta); font: 700 24px var(--f-display); display: grid; place-items: center; height: 100vh; text-transform: uppercase; letter-spacing: .1em; }
   [hidden] { display: none !important; }
@@ -274,18 +235,14 @@
     .avisos { grid-row: auto; }
     .avisos { order: -2; }
     .relogio { justify-content: space-between; }
-    .corpo { grid-template-columns: 1fr 1fr; row-gap: 10px; padding-bottom: 4px; }
-    .campo:nth-child(3), .campo:nth-child(5) { border-left: 0; padding-left: 0; }
-    .campo.pendente { padding-left: 10px; }
-    .valor { font-size: 44px; }
-    .campo.pendente .valor { font-size: 52px; }
+    .corpo { grid-template-columns: 1fr 1fr 1fr; }
+    .valor { font-size: 40px; }
     .coletas { grid-auto-flow: row; grid-template-columns: 1fr 1fr; }
     .col:nth-child(odd) { border-left: 0; }
     .col { border-left: 0; border-top: 2px solid var(--linha); }
     .col:first-child { border-top: 0; }
     .full { max-height: none; }
   }
-  @media (prefers-reduced-motion: reduce) { .barras i { transition: none; } }
 </style>
 </head>
 <body>
@@ -357,7 +314,6 @@ const sb = DEMO ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 
 // Mensagem do admin: fica em tela cheia por estes segundos, depois vira faixa no topo.
 const MSG_TELA_CHEIA_SEG = 20;
-const ALERTA_CARD_SEG = 20; // quanto tempo o aviso de etiqueta errada fica no card
 
 let estado = { resumo: [], contas: [], fontes: [], config: {}, mensagem: null };
 
@@ -387,25 +343,16 @@ function dataFull(s) {
 async function carregar() {
   if (DEMO) {
     estado = dadosDemo();
-    if (new URLSearchParams(location.search).has('alerta') && !alertasIniciados) {
-      registrarAlertas([]);
-      registrarAlertas([
-        { bipado_em: '1', codigo: '46740555812', leitor_plataforma: 'mercado', pedido_plataforma: 'mercado', alerta: 'duplicado' },
-        { bipado_em: '2', codigo: 'BR2659750094630', leitor_plataforma: 'tiktok', pedido_plataforma: 'shopee', alerta: 'plataforma_errada' }
-      ]);
-    }
+
     desenhar(); return;
   }
-  const [resumo, contas, fontes, config, mensagens, alertas] = await Promise.all([
+  const [resumo, contas, fontes, config, mensagens] = await Promise.all([
     sb.from('painel_resumo').select('*'),
     sb.from('mercado_livre_contas').select('conta_id,nome,apelido,codigo_coleta,coletas,envios_full,atualizado_em'),
     sb.from('status_fontes').select('*'),
     sb.from('configuracoes').select('*'),
-    sb.from('mensagens_painel').select('*').order('id', { ascending: false }).limit(1),
-    sb.from('painel_alertas').select('bipado_em,codigo,leitor_plataforma,pedido_plataforma,alerta')
-      .in('alerta', ['duplicado', 'plataforma_errada']).limit(30)
+    sb.from('mensagens_painel').select('*').order('id', { ascending: false }).limit(1)
   ]);
-  if (!alertas.error) registrarAlertas(alertas.data);
   const erro = [resumo, contas, fontes, config].find(r => r.error);
   if (erro) throw erro.error;
   estado = {
@@ -456,11 +403,20 @@ function desenhar() {
   desenharAvisos();
 }
 
+// Seis quadros por plataforma. "Hoje" = janela de 15h a 15h (prazo de envio do UpSeller).
+// Total = não impressas para hoje + impressas.
+const CAMPOS = [
+  { chave: 'para_emitir_hoje',   rotulo: 'Para emitir hoje',            atencao: true },
+  { chave: 'nao_impressas',      rotulo: 'Etiquetas não impressas' },
+  { chave: 'nao_impressas_hoje', rotulo: 'Não impressas para hoje',     atencao: true },
+  { chave: 'impressas',          rotulo: 'Etiquetas impressas' },
+  { chave: 'em_atraso',          rotulo: 'Em atraso',                   atencao: true },
+  { chave: 'enviados',           rotulo: 'Enviados',                    classe: 'enviado' }
+];
+
 function desenharCartao(p) {
   const r = estado.resumo.find(x => x.plataforma === p.chave) || {};
-  const total = (r.impressao_pendente || 0) + (r.impresso || 0);
-  const imp = r.impresso || 0;
-  const pct = imp ? Math.min(100, Math.round((r.bipado || 0) / imp * 100)) : 0;
+  const total = (r.nao_impressas_hoje || 0) + (r.impressas || 0);
 
   let codigos = '';
   if (p.chave === 'mercado') {
@@ -470,71 +426,17 @@ function desenharCartao(p) {
     codigos = `<div class="codigos"><span class="rotulo">Código<br>de coleta</span>${lista || '<span class="vazio">aguardando…</span>'}</div>`;
   }
 
+  const quadros = CAMPOS.map(c => {
+    const n = Number(r[c.chave] || 0);
+    const cls = ['campo', c.classe || '', c.atencao ? 'atencao' : '', c.atencao && n > 0 ? 'tem' : ''].join(' ');
+    return `<div class="${cls}"><span class="rotulo">${c.rotulo}</span><span class="valor">${fmt(n)}</span></div>`;
+  }).join('');
+
   $('card-' + p.chave).innerHTML = `
     <div class="fita"><span>${p.nome}</span><span class="total">Total<b>${fmt(total)}</b></span></div>
-    <div class="corpo">
-      <div class="campo"><span class="rotulo">Impressão pendente</span><span class="valor">${fmt(r.impressao_pendente)}</span></div>
-      <div class="campo"><span class="rotulo">Impresso</span><span class="valor">${fmt(imp)}</span></div>
-      <div class="campo"><span class="rotulo">Enviado</span><span class="valor">${fmt(r.enviado)}</span><span class="nota">já saiu na coleta</span></div>
-      <div class="campo pendente ${r.pendente ? '' : 'zerado'}"><span class="rotulo">Pendente</span><span class="valor">${fmt(r.pendente)}</span></div>
-      <div class="campo"><span class="rotulo">Bipado</span><span class="valor">${fmt(r.bipado)}</span></div>
-    </div>
-    <div class="barras" role="img" aria-label="${pct}% das etiquetas impressas hoje já bipadas"><i style="width:${pct}%"></i><span>${pct}%</span></div>
-    ${codigos}
-    ${htmlAlertaCard(p.chave)}`;
+    <div class="corpo">${quadros}</div>
+    ${codigos}`;
 }
-
-// ============================================================== aviso de etiqueta errada no card
-// Cada bipe problemático novo (repetido ou de outra plataforma) aparece por alguns
-// segundos no card da estação do leitor que bipou. O que já existia quando a página
-// abriu não aparece (só o que acontecer com o painel aberto).
-const alertasVistos = new Set();
-let alertasIniciados = false;
-const alertaCard = {}; // plataforma -> { tipo, codigo, certa, ate, qtd }
-const nomePlat = chave => (PLATAFORMAS.find(p => p.chave === chave) || {}).nome || chave;
-
-function registrarAlertas(lista) {
-  const novos = [];
-  for (const a of lista || []) {
-    const chave = `${a.bipado_em}|${a.codigo}|${a.alerta}`;
-    if (alertasVistos.has(chave)) continue;
-    alertasVistos.add(chave);
-    if (alertasIniciados) novos.push(a);
-  }
-  alertasIniciados = true;
-  // a lista vem do mais novo para o mais antigo: aplica do mais antigo, o último fica por cima
-  for (const a of novos.reverse()) {
-    const p = a.leitor_plataforma;
-    const atual = alertaCard[p];
-    alertaCard[p] = {
-      tipo: a.alerta, codigo: a.codigo, certa: a.pedido_plataforma,
-      ate: Date.now() + ALERTA_CARD_SEG * 1000,
-      qtd: atual && atual.ate > Date.now() ? atual.qtd + 1 : 1
-    };
-  }
-}
-
-function htmlAlertaCard(p) {
-  const a = alertaCard[p];
-  if (!a || a.ate <= Date.now()) return '';
-  const titulo = a.tipo === 'duplicado' ? 'Etiqueta repetida' : 'Etiqueta de outra plataforma';
-  const detalhe = a.tipo === 'duplicado'
-    ? `<code>${esc(a.codigo)}</code> já foi bipada hoje`
-    : `<code>${esc(a.codigo)}</code>${a.certa && a.certa !== p ? ` é da <b>${esc(nomePlat(a.certa))}</b>` : ''} — não é do ${esc(nomePlat(p))}`;
-  const mais = a.qtd > 1 ? ` <b>(${a.qtd} seguidas)</b>` : '';
-  return `<div class="alerta-card ${a.tipo}" role="alert">
-    <span class="icone">⚠</span><span class="titulo">${titulo}</span>
-    <span class="detalhe">${detalhe}${mais}</span></div>`;
-}
-
-// tira o aviso do card quando o tempo acaba
-function conferirAlertasCard() {
-  for (const p of PLATAFORMAS) {
-    const a = alertaCard[p.chave];
-    if (a && a.ate <= Date.now()) { delete alertaCard[p.chave]; desenharCartao(p); }
-  }
-}
-
 function classeColetaML(c) {
   const s = (c.status || '').toUpperCase();
   if (s.includes('CANCEL')) return ['cancelada', 'cancelada'];
@@ -610,7 +512,15 @@ function relogio() {
   const d = new Date();
   $('hora').textContent = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
   $('data').innerHTML = d.toLocaleDateString('pt-BR', { weekday: 'long', timeZone: 'America/Sao_Paulo' }) + '<br>' +
-    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' });
+    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' }) +
+    `<span class="janela">Hoje vai até ${fimJanela()}</span>`;
+}
+
+// fim da janela do "hoje": próximo corte das 15h (ex.: "25/11 às 15h")
+function fimJanela() {
+  const sp = new Date(new Date().toLocaleString('en-US', { timeZone: 'America/Sao_Paulo' }));
+  if (sp.getHours() >= 15) sp.setDate(sp.getDate() + 1);
+  return `${String(sp.getDate()).padStart(2, '0')}/${String(sp.getMonth() + 1).padStart(2, '0')} às 15h`;
 }
 
 // ============================================================== mensagem do admin
@@ -727,7 +637,7 @@ async function iniciarPainel() {
   $('carregando').hidden = true;
   $('tv').hidden = false;
   relogio();
-  setInterval(() => { relogio(); conferirMensagem(); conferirAlertasCard(); }, 1000);
+  setInterval(() => { relogio(); conferirMensagem(); }, 1000);
   conferirSom();
   tentarSomAutomatico();
   if (DEMO) await carregar();
@@ -763,9 +673,9 @@ function dadosDemo() {
   const iso = m => new Date(Date.now() - m * 60000).toISOString();
   return {
     resumo: [
-      { plataforma: 'mercado', impressao_pendente: 78, impresso: 230, enviado: 17, bipado: 219, pendente: 11 },
-      { plataforma: 'shopee', impressao_pendente: 0, impresso: 412, enviado: 120, bipado: 412, pendente: 0 },
-      { plataforma: 'tiktok', impressao_pendente: 28, impresso: 64, enviado: 0, bipado: 21, pendente: 43 }
+      { plataforma: 'mercado', para_emitir_hoje: 1, nao_impressas: 0, nao_impressas_hoje: 1, impressas: 230, em_atraso: 1, enviados: 230 },
+      { plataforma: 'shopee', para_emitir_hoje: 0, nao_impressas: 54, nao_impressas_hoje: 12, impressas: 1091, em_atraso: 0, enviados: 281 },
+      { plataforma: 'tiktok', para_emitir_hoje: 3, nao_impressas: 2, nao_impressas_hoje: 0, impressas: 18, em_atraso: 0, enviados: 27 }
     ],
     contas: [
       { conta_id: '1', nome: 'D K COMERCIO', apelido: 'FORTFIOS', codigo_coleta: '53A1A17E', atualizado_em: iso(1),
@@ -785,8 +695,7 @@ function dadosDemo() {
           criada_em: iso(0), expira_em: iso(-30) }
       : null,
     fontes: [{ fonte: 'upseller', atualizado_em: iso(0.3) }, { fonte: 'ml:1', atualizado_em: iso(1) }, { fonte: 'ml:2', atualizado_em: iso(1) }, { fonte: 'ml:3', atualizado_em: iso(2) }, { fonte: 'ml:4', atualizado_em: iso(1) }],
-    config: { inicio_bipagem: '2026-11-24' },
-    alertas: [{ codigo: 'BR2659750094630', alerta: 'plataforma_errada' }, { codigo: '48609412559', alerta: 'duplicado' }]
+    config: {}
   };
 }
 </script>
