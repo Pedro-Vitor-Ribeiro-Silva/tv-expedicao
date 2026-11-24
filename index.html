@@ -1,0 +1,626 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TV Expedição</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700;800&family=Barlow:wght@400;500;600&family=JetBrains+Mono:wght@500;700&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+  :root {
+    /* papelão kraft + etiqueta térmica */
+    --kraft: #a8825a;
+    --kraft-escuro: #8a6943;
+    --kraft-claro: #c29e74;
+    --etiqueta: #fbfaf6;
+    --tinta: #141414;
+    --tinta-suave: #5b5650;
+    --linha: #d9d4ca;
+    --ml: #ffe600;
+    --shopee: #ee4d2d;
+    --tiktok: #c9b8ff;
+    --alerta: #d7261e;
+    --ok: #1f8a4c;
+    --atencao: #e8a200;
+
+    --f-display: 'Barlow Condensed', 'Arial Narrow', sans-serif;
+    --f-texto: 'Barlow', system-ui, sans-serif;
+    --f-mono: 'JetBrains Mono', ui-monospace, monospace;
+
+    --gap: clamp(8px, 1.1vh, 16px);
+    --raio: 6px;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; }
+  body {
+    background:
+      repeating-linear-gradient(90deg, rgba(0,0,0,.035) 0 2px, transparent 2px 7px),
+      var(--kraft);
+    color: var(--tinta);
+    font-family: var(--f-texto);
+    -webkit-font-smoothing: antialiased;
+  }
+  button, input { font: inherit; }
+  :focus-visible { outline: 3px solid var(--tinta); outline-offset: 2px; }
+
+  /* ---------------------------------------------------------------- layout TV */
+  .tv {
+    height: 100vh;
+    display: grid;
+    grid-template-columns: 1.45fr 1fr;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    gap: var(--gap);
+    padding: var(--gap);
+  }
+  .avisos { grid-column: 1 / -1; grid-row: 1; display: flex; flex-direction: column; gap: 6px; }
+  .coluna-esq { grid-column: 1; grid-row: 2; }
+  .coluna-dir { grid-column: 2; grid-row: 2; }
+  .avisos:empty { display: none; }
+  .aviso {
+    background: var(--alerta); color: #fff; border-radius: var(--raio);
+    padding: 6px 14px; font: 600 clamp(14px, 1.9vh, 22px)/1.2 var(--f-texto);
+  }
+  .coluna-esq { display: grid; grid-template-rows: repeat(3, 1fr); gap: var(--gap); min-height: 0; }
+  .coluna-dir { display: grid; grid-template-rows: auto 1.15fr 1fr; gap: var(--gap); min-height: 0; }
+
+  /* ---------------------------------------------------------------- etiqueta */
+  .etiqueta {
+    background: var(--etiqueta);
+    border-radius: var(--raio);
+    box-shadow: 0 2px 0 var(--kraft-escuro), 0 6px 14px rgba(60, 40, 15, .25);
+    position: relative;
+    min-height: 0;
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  /* fita colorida no topo, como fita adesiva */
+  .fita {
+    display: flex; align-items: center; justify-content: space-between;
+    padding: clamp(4px, .8vh, 10px) clamp(12px, 1.4vw, 22px);
+    font: 800 clamp(18px, 3vh, 38px)/1 var(--f-display);
+    text-transform: uppercase; letter-spacing: .02em;
+  }
+  .fita .total { font-weight: 700; font-size: .8em; }
+  .fita .total b { font-size: 1.25em; margin-left: .25em; }
+  .plat-mercado .fita { background: var(--ml); }
+  .plat-shopee .fita { background: var(--shopee); color: #fff; }
+  .plat-tiktok .fita { background: var(--tiktok); }
+
+  .corpo {
+    flex: 1; min-height: 0;
+    display: grid;
+    grid-template-columns: 1fr 1fr 1.35fr 1fr;
+    gap: clamp(6px, .8vw, 14px);
+    padding: clamp(6px, 1vh, 14px) clamp(12px, 1.4vw, 22px) 0;
+  }
+  .campo { display: flex; flex-direction: column; justify-content: center; min-width: 0; border-left: 2px solid var(--linha); padding-left: clamp(6px, .7vw, 12px); }
+  .campo:first-child { border-left: 0; padding-left: 0; }
+  .rotulo { font: 700 clamp(11px, 1.5vh, 18px)/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-suave); }
+  .valor { font: 800 clamp(30px, 7.2vh, 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; }
+  /* assinatura: bloco preto invertido, como o código de triagem da etiqueta */
+  .campo.pendente {
+    background: var(--tinta); color: var(--etiqueta);
+    border: 0; border-radius: 4px; padding: clamp(4px, .8vh, 10px) clamp(10px, 1vw, 16px);
+    align-self: stretch;
+  }
+  .campo.pendente .rotulo { color: #cfcac0; }
+  .campo.pendente .valor { font-size: clamp(36px, 9vh, 120px); }
+  .campo.pendente.zerado { background: var(--ok); }
+
+  /* progresso de bipagem desenhado como código de barras */
+  .barras {
+    height: clamp(10px, 1.8vh, 20px);
+    margin: clamp(6px, .9vh, 12px) clamp(12px, 1.4vw, 22px);
+    background:
+      repeating-linear-gradient(90deg, var(--linha) 0 2px, transparent 2px 4px, var(--linha) 4px 7px, transparent 7px 9px);
+    position: relative; border-radius: 2px;
+  }
+  .barras i {
+    position: absolute; inset: 0 auto 0 0;
+    background: repeating-linear-gradient(90deg, var(--tinta) 0 2px, transparent 2px 4px, var(--tinta) 4px 7px, transparent 7px 9px);
+    transition: width .8s ease;
+  }
+  .barras span {
+    position: absolute; right: 0; top: 50%; transform: translateY(-50%);
+    background: var(--etiqueta); padding-left: 8px;
+    font: 600 clamp(11px, 1.5vh, 17px)/1 var(--f-mono);
+  }
+  .codigos {
+    border-top: 2px dashed var(--linha);
+    padding: clamp(4px, .7vh, 9px) clamp(12px, 1.4vw, 22px);
+    display: flex; flex-wrap: wrap; gap: 4px 18px; align-items: baseline;
+    font: 600 clamp(11px, 1.6vh, 19px)/1.2 var(--f-texto);
+  }
+  .codigos .rotulo { margin-right: 4px; }
+  .codigos code { font: 700 1.05em var(--f-mono); letter-spacing: .04em; }
+
+  /* ---------------------------------------------------------------- relógio */
+  .relogio {
+    display: flex; align-items: baseline; justify-content: flex-end; gap: 14px;
+    color: var(--etiqueta); padding: 0 6px;
+  }
+  .relogio .hora { font: 800 clamp(36px, 8vh, 104px)/1 var(--f-display); font-variant-numeric: tabular-nums; }
+  .relogio .data { font: 600 clamp(15px, 2.4vh, 30px)/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; text-align: right; }
+  .relogio button {
+    align-self: center; background: transparent; border: 2px solid var(--kraft-claro); color: var(--etiqueta);
+    border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 18px; line-height: 1;
+    opacity: .55;
+  }
+  .relogio button:hover { opacity: 1; }
+
+  /* ---------------------------------------------------------------- painéis da direita */
+  .caixa h2 {
+    margin: 0; padding: clamp(6px, 1vh, 12px) clamp(12px, 1.2vw, 20px);
+    font: 800 clamp(16px, 2.5vh, 32px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em;
+    border-bottom: 3px solid var(--tinta);
+    display: flex; justify-content: space-between; align-items: baseline;
+  }
+  .caixa h2 small { font: 600 .55em var(--f-texto); text-transform: none; letter-spacing: 0; color: var(--tinta-suave); }
+  .coletas { flex: 1; min-height: 0; display: grid; grid-template-columns: 1.5fr 1fr 1fr; }
+  .col { padding: clamp(6px, .9vh, 12px) clamp(8px, .9vw, 14px); border-left: 2px solid var(--linha); overflow: hidden; display: flex; flex-direction: column; gap: clamp(3px, .5vh, 7px); }
+  .col:first-child { border-left: 0; }
+  .col h3 { margin: 0 0 2px; font: 800 clamp(13px, 2vh, 24px)/1 var(--f-display); text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+  .col h3 .ponto { width: .7em; height: .7em; border-radius: 2px; display: inline-block; }
+  .coleta { display: flex; align-items: baseline; gap: 8px; font: 600 clamp(14px, 2.2vh, 28px)/1.15 var(--f-display); font-variant-numeric: tabular-nums; }
+  .coleta .conta { font: 600 clamp(10px, 1.45vh, 17px)/1 var(--f-texto); color: var(--tinta-suave); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .coleta .st { font: 700 clamp(10px, 1.35vh, 16px)/1 var(--f-texto); padding: 2px 5px; border-radius: 3px; white-space: nowrap; }
+  .coleta.feita { color: #9b958b; }
+  .coleta.feita .st { background: #e4f2ea; color: var(--ok); }
+  .coleta.cancelada { color: #b9b3a9; text-decoration: line-through; }
+  .coleta.cancelada .st { text-decoration: none; background: #eee; color: #8a857c; }
+  .coleta.atrasada .st { background: var(--alerta); color: #fff; }
+  .coleta.proxima { background: var(--tinta); color: var(--etiqueta); margin: 0 -6px; padding: 3px 6px; border-radius: 3px; }
+  .coleta.proxima .conta { color: #cfcac0; }
+  .coleta.proxima .st { background: var(--atencao); color: var(--tinta); }
+  .vazio { color: var(--tinta-suave); font: 500 clamp(12px, 1.7vh, 20px)/1.3 var(--f-texto); }
+
+  .full { flex: 1; min-height: 0; overflow: hidden; padding: clamp(4px, .6vh, 8px) clamp(12px, 1.2vw, 20px); display: flex; flex-direction: column; }
+  .envio { display: grid; grid-template-columns: auto auto 1fr auto; gap: 4px clamp(8px, .9vw, 16px); align-items: baseline; padding: clamp(3px, .6vh, 8px) 0; border-bottom: 1px solid var(--linha); }
+  .envio:last-child { border-bottom: 0; }
+  .envio .num { font: 700 clamp(13px, 2vh, 25px)/1 var(--f-mono); }
+  .envio .dia { font: 800 clamp(15px, 2.3vh, 29px)/1 var(--f-display); text-transform: uppercase; }
+  .envio .dia.hoje { background: var(--ml); padding: 1px 5px; border-radius: 3px; }
+  .envio .info { font: 500 clamp(11px, 1.5vh, 18px)/1.15 var(--f-texto); color: var(--tinta-suave); min-width: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .envio .info b { color: var(--tinta); font-weight: 700; text-transform: uppercase; }
+  .envio .st { font: 700 clamp(10px, 1.35vh, 16px)/1 var(--f-texto); padding: 3px 6px; border-radius: 3px; background: #f1ede4; white-space: nowrap; }
+  .envio .st.prep { background: var(--atencao); }
+
+  .rodape { grid-column: 1 / -1; grid-row: 3; display: none; }
+  .alertas-bipe {
+    background: var(--etiqueta); border-left: 8px solid var(--alerta); border-radius: var(--raio);
+    padding: 6px 14px; font: 600 clamp(13px, 1.8vh, 21px)/1.2 var(--f-texto);
+  }
+  .alertas-bipe code { font: 700 1em var(--f-mono); }
+
+  /* ---------------------------------------------------------------- login / ajustes */
+  .tela-login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
+  .cartao-form {
+    background: var(--etiqueta); border-radius: var(--raio); width: min(420px, 100%);
+    box-shadow: 0 2px 0 var(--kraft-escuro), 0 10px 30px rgba(60, 40, 15, .3); overflow: hidden;
+  }
+  .cartao-form .fita { background: var(--tinta); color: var(--etiqueta); }
+  .cartao-form form { padding: 18px 20px 20px; display: grid; gap: 12px; }
+  label { display: grid; gap: 4px; font: 700 13px/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-suave); }
+  input[type=email], input[type=password], input[type=text], input[type=date] {
+    border: 2px solid var(--tinta); border-radius: 4px; padding: 10px 12px; font: 500 16px var(--f-texto); color: var(--tinta); background: #fff; text-transform: none; letter-spacing: 0;
+  }
+  .botao { background: var(--tinta); color: var(--etiqueta); border: 0; border-radius: 4px; padding: 11px 16px; font: 800 18px/1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
+  .botao.secundario { background: transparent; color: var(--tinta); border: 2px solid var(--tinta); }
+  .erro-form { color: var(--alerta); font-weight: 600; min-height: 1.2em; margin: 0; }
+  .dica { font: 500 13px/1.35 var(--f-texto); color: var(--tinta-suave); margin: 0; }
+
+  dialog { border: 0; padding: 0; border-radius: var(--raio); width: min(560px, calc(100vw - 32px)); background: var(--etiqueta); }
+  dialog::backdrop { background: rgba(30, 20, 8, .55); }
+  dialog form { padding: 16px 20px 20px; display: grid; gap: 14px; max-height: 80vh; overflow: auto; }
+  dialog fieldset { border: 2px solid var(--linha); border-radius: 4px; padding: 10px 12px 12px; display: grid; gap: 10px; margin: 0; }
+  dialog legend { font: 800 15px var(--f-display); text-transform: uppercase; padding: 0 4px; }
+  .acoes { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+
+  .carregando { color: var(--etiqueta); font: 700 24px var(--f-display); display: grid; place-items: center; height: 100vh; text-transform: uppercase; letter-spacing: .1em; }
+  [hidden] { display: none !important; }
+  body.ocioso { cursor: none; }
+
+  /* ---------------------------------------------------------------- celular / telas estreitas */
+  @media (max-width: 900px), (orientation: portrait) {
+    .tv { height: auto; grid-template-columns: 1fr; grid-template-rows: none; }
+    .coluna-esq, .coluna-dir { grid-template-rows: none; grid-column: 1; grid-row: auto; }
+    .avisos, .rodape { grid-row: auto; }
+    .avisos { order: -2; }
+    .relogio { justify-content: space-between; }
+    .corpo { grid-template-columns: 1fr 1fr; row-gap: 10px; padding-bottom: 4px; }
+    .campo:nth-child(3) { border-left: 0; padding-left: 0; }
+    .campo.pendente { padding-left: 10px; }
+    .valor { font-size: 44px; }
+    .campo.pendente .valor { font-size: 52px; }
+    .coletas { grid-template-columns: 1fr; }
+    .col { border-left: 0; border-top: 2px solid var(--linha); }
+    .col:first-child { border-top: 0; }
+    .full { max-height: none; }
+  }
+  @media (prefers-reduced-motion: reduce) { .barras i { transition: none; } }
+</style>
+</head>
+<body>
+
+<div id="carregando" class="carregando">Carregando…</div>
+
+<!-- Painel -->
+<main id="tv" class="tv" hidden>
+  <div class="avisos" id="avisos"></div>
+
+  <section class="coluna-esq" aria-label="Plataformas">
+    <article class="etiqueta plat-mercado" id="card-mercado"></article>
+    <article class="etiqueta plat-shopee" id="card-shopee"></article>
+    <article class="etiqueta plat-tiktok" id="card-tiktok"></article>
+  </section>
+
+  <section class="coluna-dir">
+    <div class="relogio">
+      <div class="data" id="data"></div>
+      <div class="hora" id="hora">--:--</div>
+      <button type="button" id="abrir-ajustes" aria-label="Ajustes" title="Ajustes">⚙</button>
+    </div>
+
+    <article class="etiqueta caixa">
+      <h2>Coletas de hoje <small id="coletas-sub"></small></h2>
+      <div class="coletas">
+        <div class="col" id="col-ml"></div>
+        <div class="col" id="col-shopee"></div>
+        <div class="col" id="col-tiktok"></div>
+      </div>
+    </article>
+
+    <article class="etiqueta caixa">
+      <h2>Full Mercado Livre <small id="full-sub"></small></h2>
+      <div class="full" id="lista-full"></div>
+    </article>
+  </section>
+
+  <div class="rodape" id="rodape"></div>
+</main>
+
+<!-- Ajustes -->
+<dialog id="ajustes">
+  <div class="fita" style="background:var(--tinta);color:var(--etiqueta)">Ajustes</div>
+  <form id="form-ajustes" method="dialog">
+    <fieldset>
+      <legend>Horários fixos de coleta</legend>
+      <label>Shopee <input type="text" id="aj-shopee" placeholder="ex.: 10:00, 15:30"></label>
+      <label>TikTok Shop <input type="text" id="aj-tiktok" placeholder="ex.: 14:00"></label>
+      <p class="dica">Separe os horários por vírgula.</p>
+    </fieldset>
+    <fieldset id="aj-contas">
+      <legend>Nomes das contas do Mercado Livre</legend>
+    </fieldset>
+    <fieldset>
+      <legend>Bipagem</legend>
+      <label>Contar como pendente etiquetas impressas a partir de <input type="date" id="aj-inicio"></label>
+    </fieldset>
+    <p class="erro-form" id="aj-erro" role="alert"></p>
+    <div class="acoes">
+      <span></span>
+      <span>
+        <button class="botao secundario" type="button" id="aj-cancelar">Cancelar</button>
+        <button class="botao" type="button" id="aj-salvar">Salvar ajustes</button>
+      </span>
+    </div>
+  </form>
+</dialog>
+
+<script>
+// ============================================================== configuração
+const SUPABASE_URL = 'https://tkfbfsinueeaeecivjxu.supabase.co';
+// Chave pública (anon). Ela só lê os totais e dados do painel; pedidos e bipes ficam fechados no banco.
+const SUPABASE_ANON = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InRrZmJmc2ludWVlYWVlY2l2anh1Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTU0NjEzNDgsImV4cCI6MjExMTAzNzM0OH0.YIAiHxoa13wi5xj09AJVluOtIpHA6gcakEyBwmDHNdA';
+
+const PLATAFORMAS = [
+  { chave: 'mercado', nome: 'Mercado Livre', cor: 'var(--ml)' },
+  { chave: 'shopee', nome: 'Shopee', cor: 'var(--shopee)' },
+  { chave: 'tiktok', nome: 'TikTok Shop', cor: 'var(--tiktok)' }
+];
+// Depois de quanto tempo sem atualizar uma fonte é considerada "parada"
+const LIMITE_MIN = { upseller: 3, ml: 6 };
+const MESES = ['jan','fev','mar','abr','mai','jun','jul','ago','set','out','nov','dez'];
+
+const DEMO = new URLSearchParams(location.search).has('demo');
+const ATUALIZAR_SEG = 5;
+const sb = DEMO ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
+  auth: { persistSession: false, autoRefreshToken: false }
+});
+
+let estado = { resumo: [], contas: [], horarios: [], fontes: [], config: {}, alertas: [] };
+
+// ============================================================== utilidades
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+const fmt = n => Number(n || 0).toLocaleString('pt-BR');
+function agoraSP() {
+  const p = new Intl.DateTimeFormat('en-CA', { timeZone: 'America/Sao_Paulo', hour12: false,
+    year: 'numeric', month: '2-digit', day: '2-digit', hour: '2-digit', minute: '2-digit' }).formatToParts(new Date());
+  const g = t => p.find(x => x.type === t).value;
+  return { data: `${g('year')}-${g('month')}-${g('day')}`, hm: `${g('hour') === '24' ? '00' : g('hour')}:${g('minute')}` };
+}
+const minutos = hm => { const [h, m] = String(hm).split(':').map(Number); return h * 60 + (m || 0); };
+const apelido = c => c.apelido || (c.nome || c.conta_id || '').split(' ').slice(0, 3).join(' ');
+
+// "25/nov 2026" -> Date (ou null)
+function dataFull(s) {
+  const m = String(s || '').match(/(\d{1,2})\/(\w{3})\.?\s*(\d{4})?/i);
+  if (!m) return null;
+  const mes = MESES.indexOf(m[2].toLowerCase());
+  if (mes < 0) return null;
+  return new Date(Number(m[3] || new Date().getFullYear()), mes, Number(m[1]));
+}
+
+// ============================================================== carga de dados
+async function carregar() {
+  if (DEMO) { estado = dadosDemo(); desenhar(); return; }
+  const [resumo, contas, horarios, fontes, config, alertas] = await Promise.all([
+    sb.from('painel_resumo').select('*'),
+    sb.from('mercado_livre_contas').select('conta_id,nome,apelido,codigo_coleta,coletas,envios_full,atualizado_em'),
+    sb.from('horarios_coleta').select('*'),
+    sb.from('status_fontes').select('*'),
+    sb.from('configuracoes').select('*'),
+    sb.from('painel_alertas').select('*').limit(50)
+  ]);
+  const erro = [resumo, contas, horarios, fontes, config, alertas].find(r => r.error);
+  if (erro) throw erro.error;
+  estado = {
+    resumo: resumo.data, contas: contas.data, horarios: horarios.data, fontes: fontes.data,
+    config: Object.fromEntries(config.data.map(c => [c.chave, c.valor])), alertas: alertas.data
+  };
+  desenhar();
+}
+
+function mostrarErroCarga(e) {
+  console.error(e);
+  $('avisos').innerHTML = `<div class="aviso">Sem conexão com o banco de dados (${esc(e.message || e)}). Tentando de novo…</div>`;
+}
+
+// Busca os dados a cada poucos segundos (sem sobrepor buscas).
+async function cicloAtualizacao() {
+  try { await carregar(); } catch (e) { mostrarErroCarga(e); }
+  setTimeout(cicloAtualizacao, ATUALIZAR_SEG * 1000);
+}
+
+// ============================================================== desenho
+function desenhar() {
+  for (const p of PLATAFORMAS) desenharCartao(p);
+  desenharColetas();
+  desenharFull();
+  desenharAvisos();
+}
+
+function desenharCartao(p) {
+  const r = estado.resumo.find(x => x.plataforma === p.chave) || {};
+  const total = (r.impressao_pendente || 0) + (r.impresso || 0);
+  const imp = r.impresso || 0;
+  const pct = imp ? Math.min(100, Math.round((r.bipado || 0) / imp * 100)) : 0;
+
+  let codigos = '';
+  if (p.chave === 'mercado') {
+    const lista = [...estado.contas].sort((a, b) => apelido(a).localeCompare(apelido(b)))
+      .filter(c => c.codigo_coleta)
+      .map(c => `<span>${esc(apelido(c))} <code>${esc(c.codigo_coleta)}</code></span>`).join('');
+    codigos = `<div class="codigos"><span class="rotulo">Código de coleta</span>${lista || '<span class="vazio">aguardando…</span>'}</div>`;
+  }
+
+  $('card-' + p.chave).innerHTML = `
+    <div class="fita"><span>${p.nome}</span><span class="total">Total<b>${fmt(total)}</b></span></div>
+    <div class="corpo">
+      <div class="campo"><span class="rotulo">Impressão pendente</span><span class="valor">${fmt(r.impressao_pendente)}</span></div>
+      <div class="campo"><span class="rotulo">Impresso</span><span class="valor">${fmt(imp)}</span></div>
+      <div class="campo pendente ${r.pendente ? '' : 'zerado'}"><span class="rotulo">Pendente</span><span class="valor">${fmt(r.pendente)}</span></div>
+      <div class="campo"><span class="rotulo">Bipado</span><span class="valor">${fmt(r.bipado)}</span></div>
+    </div>
+    <div class="barras" role="img" aria-label="${pct}% das etiquetas impressas hoje já bipadas"><i style="width:${pct}%"></i><span>${pct}%</span></div>
+    ${codigos}`;
+}
+
+function classeColetaML(c) {
+  const s = (c.status || '').toUpperCase();
+  if (s.includes('CANCEL')) return ['cancelada', 'cancelada'];
+  if (c.tipo === 'realizada' || s.includes('CONCLU')) return ['feita', 'feita'];
+  if (s.includes('ATRAS')) return ['atrasada', 'atrasada'];
+  if (s.includes('CAMINHO')) return ['', 'a caminho'];
+  return ['', 'prevista'];
+}
+
+function desenharColetas() {
+  const agora = minutos(agoraSP().hm);
+
+  // Mercado Livre: coletas lidas de cada conta
+  const ml = estado.contas.flatMap(c => (c.coletas || []).map(x => ({ ...x, conta: apelido(c) })))
+    .sort((a, b) => minutos(a.inicio) - minutos(b.inicio));
+  let proximaMarcada = false;
+  const linhasML = ml.map(c => {
+    let [cls, st] = classeColetaML(c);
+    if (!cls && !proximaMarcada) { cls = 'proxima'; proximaMarcada = true; }
+    else if (cls === 'atrasada' && !proximaMarcada) { proximaMarcada = true; }
+    return `<div class="coleta ${cls}"><span>${esc(c.inicio)}–${esc(c.fim)}</span><span class="conta">${esc(c.conta)}</span><span class="st">${st}</span></div>`;
+  }).join('');
+  $('col-ml').innerHTML = `<h3><span class="ponto" style="background:var(--ml)"></span>ML</h3>${linhasML || '<span class="vazio">Nenhuma coleta informada pelo ML.</span>'}`;
+
+  // Shopee / TikTok: horários fixos configurados
+  for (const [chave, sigla, cor] of [['shopee', 'SHP', 'var(--shopee)'], ['tiktok', 'TTK', 'var(--tiktok)']]) {
+    const h = (estado.horarios.find(x => x.plataforma === chave)?.horarios || []).slice().sort((a, b) => minutos(a) - minutos(b));
+    let marcada = false;
+    const linhas = h.map(hm => {
+      let cls = '', st = 'prevista';
+      if (minutos(hm) < agora) { cls = 'feita'; st = 'passou'; }
+      else if (!marcada) { cls = 'proxima'; marcada = true; }
+      return `<div class="coleta ${cls}"><span>${esc(hm)}</span><span class="st">${st}</span></div>`;
+    }).join('');
+    $('col-' + chave).innerHTML = `<h3><span class="ponto" style="background:${cor}"></span>${sigla}</h3>${linhas || '<span class="vazio">Sem horário. Configure em ⚙.</span>'}`;
+  }
+}
+
+function desenharFull() {
+  const hoje = new Date(); hoje.setHours(0, 0, 0, 0);
+  const envios = estado.contas.flatMap(c => (c.envios_full || []).map(e => ({ ...e, conta: apelido(c), d: dataFull(e.data) })))
+    .sort((a, b) => (a.d ? a.d.getTime() : Infinity) - (b.d ? b.d.getTime() : Infinity));
+  $('full-sub').textContent = envios.length ? `${envios.length} envio${envios.length > 1 ? 's' : ''}` : '';
+  $('lista-full').innerHTML = envios.map(e => {
+    let dia = 'sem data', hojeCls = '';
+    if (e.d) {
+      const diff = Math.round((e.d - hoje) / 86400000);
+      dia = diff === 0 ? 'hoje' : diff === 1 ? 'amanhã' : `${e.d.getDate()}/${MESES[e.d.getMonth()]}`;
+      if (diff <= 0) hojeCls = 'hoje';
+    }
+    const prep = /prepara/i.test(e.status || '');
+    return `<div class="envio">
+      <span class="dia ${hojeCls}">${dia}</span>
+      <span class="num">#${esc(e.numero)}</span>
+      <span class="info"><b>${esc(e.conta)}</b> · ${esc(e.unidades || '?')} un · ${esc(e.produto || '')}</span>
+      <span class="st ${prep ? 'prep' : ''}">${esc(e.status || '')}</span>
+    </div>`;
+  }).join('') || '<span class="vazio">Nenhum envio Full em preparação ou aguardando recebimento.</span>';
+}
+
+function desenharAvisos() {
+  const avisos = [];
+  const agora = Date.now();
+  for (const f of estado.fontes) {
+    const ml = f.fonte.startsWith('ml:');
+    const nome = ml ? `Mercado Livre ${apelido(estado.contas.find(c => 'ml:' + c.conta_id === f.fonte) || { nome: f.fonte })}` : 'UpSeller';
+    const min = f.atualizado_em ? (agora - new Date(f.atualizado_em)) / 60000 : Infinity;
+    const limite = ml ? LIMITE_MIN.ml : LIMITE_MIN.upseller;
+    if (min > limite) avisos.push(`⚠ ${nome}: dados parados há ${min === Infinity ? 'muito tempo' : Math.round(min) + ' min'}. Verifique o navegador da expedição.`);
+    else if (f.erro) avisos.push(`⚠ ${nome}: ${f.erro}`);
+  }
+  if (!estado.fontes.some(f => f.fonte === 'upseller')) avisos.push('⚠ UpSeller ainda não enviou dados. Verifique a extensão no navegador da expedição.');
+  $('avisos').innerHTML = avisos.map(a => `<div class="aviso">${esc(a)}</div>`).join('');
+
+  // Bipes com problema hoje
+  const al = estado.alertas || [];
+  const rod = $('rodape');
+  if (!al.length) { rod.style.display = 'none'; return; }
+  const nomes = { duplicado: 'repetidos', plataforma_errada: 'no leitor errado', nao_encontrado: 'não encontrados no UpSeller' };
+  const cont = {};
+  al.forEach(a => cont[a.alerta] = (cont[a.alerta] || 0) + 1);
+  const u = al[0];
+  rod.style.display = 'block';
+  rod.innerHTML = `<div class="alertas-bipe">Bipes com problema hoje: ${Object.entries(cont).map(([k, n]) => `${n} ${nomes[k] || k}`).join(' · ')}
+    — último: <code>${esc(u.codigo)}</code> (${esc(nomes[u.alerta] || u.alerta)})</div>`;
+}
+
+// ============================================================== relógio
+function relogio() {
+  const d = new Date();
+  $('hora').textContent = d.toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+  $('data').innerHTML = d.toLocaleDateString('pt-BR', { weekday: 'long', timeZone: 'America/Sao_Paulo' }) + '<br>' +
+    d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' });
+}
+
+// ============================================================== ajustes
+function abrirAjustes() {
+  const h = k => (estado.horarios.find(x => x.plataforma === k)?.horarios || []).join(', ');
+  $('aj-shopee').value = h('shopee');
+  $('aj-tiktok').value = h('tiktok');
+  $('aj-inicio').value = estado.config.inicio_bipagem || '';
+  const fs = $('aj-contas');
+  fs.querySelectorAll('label').forEach(l => l.remove());
+  for (const c of [...estado.contas].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))) {
+    const l = document.createElement('label');
+    l.textContent = c.nome || c.conta_id;
+    const i = document.createElement('input');
+    i.type = 'text'; i.value = c.apelido || ''; i.dataset.conta = c.conta_id; i.placeholder = 'nome curto para a TV';
+    l.append(i);
+    fs.append(l);
+  }
+  $('aj-erro').textContent = '';
+  $('ajustes').showModal();
+}
+
+function lerHorarios(s) {
+  const lista = s.split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
+  for (const x of lista) if (!/^([01]?\d|2[0-3]):[0-5]\d$/.test(x)) throw new Error(`Horário inválido: "${x}". Use o formato 14:30.`);
+  return lista.map(x => x.padStart(5, '0'));
+}
+
+async function salvarAjustes() {
+  try {
+    if (DEMO) { $('ajustes').close(); return; }
+    const apelidos = {};
+    $('aj-contas').querySelectorAll('input').forEach(i => { apelidos[i.dataset.conta] = i.value.trim(); });
+    const { error } = await sb.rpc('painel_salvar_ajustes', {
+      p_shopee: lerHorarios($('aj-shopee').value),
+      p_tiktok: lerHorarios($('aj-tiktok').value),
+      p_inicio: $('aj-inicio').value || null,
+      p_apelidos: apelidos
+    });
+    if (error) throw error;
+    $('ajustes').close();
+    await carregar();
+  } catch (e) {
+    $('aj-erro').textContent = e.message || String(e);
+  }
+}
+
+// ============================================================== início
+async function iniciarPainel() {
+  $('carregando').hidden = true;
+  $('tv').hidden = false;
+  relogio();
+  setInterval(relogio, 1000);
+  if (DEMO) await carregar();
+  else cicloAtualizacao();
+  manterTelaLigada();
+}
+
+async function manterTelaLigada() {
+  try {
+    if (!('wakeLock' in navigator)) return;
+    await navigator.wakeLock.request('screen');
+    document.addEventListener('visibilitychange', () => {
+      if (document.visibilityState === 'visible') navigator.wakeLock.request('screen').catch(() => {});
+    });
+  } catch { /* navegador não permite: ignora */ }
+}
+
+// esconde o cursor do mouse quando parado (TV)
+let ocioso;
+document.addEventListener('mousemove', () => {
+  document.body.classList.remove('ocioso');
+  clearTimeout(ocioso);
+  ocioso = setTimeout(() => document.body.classList.add('ocioso'), 4000);
+});
+
+$('abrir-ajustes').addEventListener('click', abrirAjustes);
+$('aj-cancelar').addEventListener('click', () => $('ajustes').close());
+$('aj-salvar').addEventListener('click', salvarAjustes);
+iniciarPainel();
+
+// ============================================================== dados de demonstração (?demo)
+function dadosDemo() {
+  const iso = m => new Date(Date.now() - m * 60000).toISOString();
+  return {
+    resumo: [
+      { plataforma: 'mercado', impressao_pendente: 78, impresso: 230, bipado: 219, pendente: 11 },
+      { plataforma: 'shopee', impressao_pendente: 0, impresso: 412, bipado: 412, pendente: 0 },
+      { plataforma: 'tiktok', impressao_pendente: 28, impresso: 64, bipado: 21, pendente: 43 }
+    ],
+    contas: [
+      { conta_id: '1', nome: 'D K COMERCIO', apelido: 'FORTFIOS', codigo_coleta: '53A1A17E', atualizado_em: iso(1),
+        coletas: [{ tipo: 'realizada', status: 'CONCLUÍDA', inicio: '09:00', fim: '09:42' }],
+        envios_full: [
+          { numero: '82993441', produto: 'FULL 06MM 50 METROS', unidades: '308', data: '25/nov 2026', status: 'Em preparação' },
+          { numero: '82448064', produto: 'FIO 2,5MM 100 METROS', unidades: '700', data: '24/nov 2026', status: 'Recebimento pendente' },
+          { numero: '82432244', produto: 'FIO 4MM 50 METROS', unidades: '300', data: '-', status: 'Em preparação' }] },
+      { conta_id: '2', nome: 'L K COMERCIO', apelido: 'NANET UTILIDADES', codigo_coleta: '7C0F2497', atualizado_em: iso(1),
+        coletas: [{ tipo: 'prevista', status: 'PROGRAMADA', inicio: '12:30', fim: '14:30' }, { tipo: 'prevista', status: 'PROGRAMADA', inicio: '17:00', fim: '19:00' }], envios_full: [] },
+      { conta_id: '3', nome: 'V.L - COMERCIO', apelido: 'NANET CONSTRUÇÃO', codigo_coleta: '00F5CA16', atualizado_em: iso(2), coletas: [], envios_full: [] },
+      { conta_id: '4', nome: '52.749.128 EDINEIA', apelido: 'LK ECOM', codigo_coleta: 'DEF210BE', atualizado_em: iso(1),
+        coletas: [{ tipo: 'prevista', status: 'SERVIÇO ATRASADO', inicio: '15:00', fim: '17:00' }], envios_full: [] }
+    ],
+    horarios: [{ plataforma: 'shopee', horarios: ['10:00', '15:30'] }, { plataforma: 'tiktok', horarios: ['14:00'] }],
+    fontes: [{ fonte: 'upseller', atualizado_em: iso(0.3) }, { fonte: 'ml:1', atualizado_em: iso(1) }, { fonte: 'ml:2', atualizado_em: iso(1) }, { fonte: 'ml:3', atualizado_em: iso(2) }, { fonte: 'ml:4', atualizado_em: iso(1) }],
+    config: { inicio_bipagem: '2026-11-24' },
+    alertas: [{ codigo: 'BR2659750094630', alerta: 'plataforma_errada' }, { codigo: '48609412559', alerta: 'duplicado' }]
+  };
+}
+</script>
+</body>
+</html>

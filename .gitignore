@@ -1,0 +1,5 @@
+# Só o index.html vai para o GitHub Pages
+*
+!index.html
+!.gitignore
+!.nojekyll
