@@ -591,8 +591,17 @@ function conferirMensagem() {
 // liberou, aparece um botão discreto no canto; um toque em qualquer lugar resolve.
 let audio = null;
 function contextoAudio() {
-  if (!audio) { const C = window.AudioContext || window.webkitAudioContext; if (C) audio = new C(); }
+  if (!audio) {
+    const C = window.AudioContext || window.webkitAudioContext;
+    if (C) { audio = new C(); audio.addEventListener?.('statechange', conferirSom); }
+  }
   return audio;
+}
+// Tenta ligar o som sozinho (funciona quando o navegador da TV permite som automático,
+// ex.: Chrome com --autoplay-policy=no-user-gesture-required, ou Fully Kiosk com áudio liberado).
+function tentarSomAutomatico() {
+  liberarSom();
+  setInterval(() => { if (audio && audio.state !== 'running') liberarSom(); }, 10000);
 }
 function conferirSom() {
   const ctx = contextoAudio();
@@ -628,6 +637,7 @@ async function iniciarPainel() {
   relogio();
   setInterval(() => { relogio(); conferirMensagem(); }, 1000);
   conferirSom();
+  tentarSomAutomatico();
   if (DEMO) await carregar();
   else { cicloAtualizacao(); ouvirMudancas(); }
   manterTelaLigada();
