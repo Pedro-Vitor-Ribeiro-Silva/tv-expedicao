@@ -129,20 +129,22 @@
     background: var(--etiqueta); padding-left: 8px;
     font: 600 clamp(11px, 1.5vh, 17px)/1 var(--f-mono);
   }
+  /* faixa preta com letras brancas: os códigos de coleta saltam aos olhos */
   .codigos {
-    border-top: 2px dashed var(--linha);
-    padding: clamp(4px, .7vh, 9px) clamp(12px, 1.4vw, 22px);
+    background: #000; color: #fff;
+    padding: clamp(5px, .8vh, 10px) clamp(12px, 1.4vw, 22px);
     display: flex; flex-wrap: wrap; align-items: center; gap: clamp(4px, .6vh, 8px) 0;
   }
-  .codigos .rotulo { margin-right: clamp(10px, 1vw, 18px); line-height: 1.05; }
+  .codigos .rotulo { margin-right: clamp(10px, 1vw, 18px); line-height: 1.05; color: #fff; opacity: .75; }
+  .codigos .vazio { color: #fff; opacity: .7; }
   /* cada conta: nome pequeno em cima, código grande embaixo, separadas por divisória */
   .cod {
     display: flex; flex-direction: column; gap: 1px;
     padding: 0 clamp(10px, 1.1vw, 20px);
-    border-left: 2px solid var(--linha);
+    border-left: 2px solid rgba(255, 255, 255, .35);
   }
-  .cod-conta { font: 700 clamp(11px, 1.6vh, 19px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-forte-codigo); white-space: nowrap; }
-  .cod code { font: 800 clamp(20px, 3.4vh, 42px)/1.05 var(--f-mono); letter-spacing: .08em; }
+  .cod-conta { font: 700 clamp(11px, 1.6vh, 19px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: #fff; white-space: nowrap; }
+  .cod code { font: 800 clamp(20px, 3.4vh, 42px)/1.05 var(--f-mono); letter-spacing: .08em; color: #fff; }
 
   /* ---------------------------------------------------------------- relógio */
   .relogio {
