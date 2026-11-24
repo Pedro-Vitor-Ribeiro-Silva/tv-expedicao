@@ -243,6 +243,26 @@
   }
   @media (prefers-reduced-motion: reduce) { .msg-cartao, .msg-cartao .fita { animation: none; } }
 
+  /* aviso temporário no card: etiqueta repetida ou de outra plataforma */
+  .alerta-card {
+    position: absolute; left: 3%; right: 3%; top: 50%; z-index: 5;
+    transform: translateY(-38%);
+    display: grid; grid-template-columns: auto 1fr; align-items: center; gap: 2px clamp(10px, 1.2vw, 20px);
+    padding: clamp(8px, 1.3vh, 16px) clamp(14px, 1.6vw, 26px);
+    border-radius: var(--raio); color: #fff;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, .45);
+    animation: alerta-entra .35s ease-out, alerta-pisca 1s steps(2, jump-none) .35s 4;
+  }
+  .alerta-card.duplicado { background: #c25a00; }
+  .alerta-card.plataforma_errada { background: var(--alerta); }
+  .alerta-card .icone { grid-row: span 2; font: 800 clamp(30px, 6vh, 72px)/1 var(--f-display); }
+  .alerta-card .titulo { font: 800 clamp(20px, 3.8vh, 46px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .02em; }
+  .alerta-card .detalhe { font: 600 clamp(14px, 2.2vh, 26px)/1.15 var(--f-texto); }
+  .alerta-card .detalhe code { font: 700 1.1em var(--f-mono); letter-spacing: .04em; }
+  @keyframes alerta-entra { from { opacity: 0; transform: translateY(-38%) scale(.92); } }
+  @keyframes alerta-pisca { 50% { filter: brightness(1.35); } }
+  @media (prefers-reduced-motion: reduce) { .alerta-card { animation: none; } }
+
   .carregando { color: var(--etiqueta); font: 700 24px var(--f-display); display: grid; place-items: center; height: 100vh; text-transform: uppercase; letter-spacing: .1em; }
   [hidden] { display: none !important; }
   body.ocioso { cursor: none; }
@@ -337,6 +357,7 @@ const sb = DEMO ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 
 // Mensagem do admin: fica em tela cheia por estes segundos, depois vira faixa no topo.
 const MSG_TELA_CHEIA_SEG = 20;
+const ALERTA_CARD_SEG = 20; // quanto tempo o aviso de etiqueta errada fica no card
 
 let estado = { resumo: [], contas: [], fontes: [], config: {}, mensagem: null };
 
@@ -364,14 +385,27 @@ function dataFull(s) {
 
 // ============================================================== carga de dados
 async function carregar() {
-  if (DEMO) { estado = dadosDemo(); desenhar(); return; }
-  const [resumo, contas, fontes, config, mensagens] = await Promise.all([
+  if (DEMO) {
+    estado = dadosDemo();
+    if (new URLSearchParams(location.search).has('alerta') && !alertasIniciados) {
+      registrarAlertas([]);
+      registrarAlertas([
+        { bipado_em: '1', codigo: '46740555812', leitor_plataforma: 'mercado', pedido_plataforma: 'mercado', alerta: 'duplicado' },
+        { bipado_em: '2', codigo: 'BR2659750094630', leitor_plataforma: 'tiktok', pedido_plataforma: 'shopee', alerta: 'plataforma_errada' }
+      ]);
+    }
+    desenhar(); return;
+  }
+  const [resumo, contas, fontes, config, mensagens, alertas] = await Promise.all([
     sb.from('painel_resumo').select('*'),
     sb.from('mercado_livre_contas').select('conta_id,nome,apelido,codigo_coleta,coletas,envios_full,atualizado_em'),
     sb.from('status_fontes').select('*'),
     sb.from('configuracoes').select('*'),
-    sb.from('mensagens_painel').select('*').order('id', { ascending: false }).limit(1)
+    sb.from('mensagens_painel').select('*').order('id', { ascending: false }).limit(1),
+    sb.from('painel_alertas').select('bipado_em,codigo,leitor_plataforma,pedido_plataforma,alerta')
+      .in('alerta', ['duplicado', 'plataforma_errada']).limit(30)
   ]);
+  if (!alertas.error) registrarAlertas(alertas.data);
   const erro = [resumo, contas, fontes, config].find(r => r.error);
   if (erro) throw erro.error;
   estado = {
@@ -446,7 +480,59 @@ function desenharCartao(p) {
       <div class="campo"><span class="rotulo">Bipado</span><span class="valor">${fmt(r.bipado)}</span></div>
     </div>
     <div class="barras" role="img" aria-label="${pct}% das etiquetas impressas hoje já bipadas"><i style="width:${pct}%"></i><span>${pct}%</span></div>
-    ${codigos}`;
+    ${codigos}
+    ${htmlAlertaCard(p.chave)}`;
+}
+
+// ============================================================== aviso de etiqueta errada no card
+// Cada bipe problemático novo (repetido ou de outra plataforma) aparece por alguns
+// segundos no card da estação do leitor que bipou. O que já existia quando a página
+// abriu não aparece (só o que acontecer com o painel aberto).
+const alertasVistos = new Set();
+let alertasIniciados = false;
+const alertaCard = {}; // plataforma -> { tipo, codigo, certa, ate, qtd }
+const nomePlat = chave => (PLATAFORMAS.find(p => p.chave === chave) || {}).nome || chave;
+
+function registrarAlertas(lista) {
+  const novos = [];
+  for (const a of lista || []) {
+    const chave = `${a.bipado_em}|${a.codigo}|${a.alerta}`;
+    if (alertasVistos.has(chave)) continue;
+    alertasVistos.add(chave);
+    if (alertasIniciados) novos.push(a);
+  }
+  alertasIniciados = true;
+  // a lista vem do mais novo para o mais antigo: aplica do mais antigo, o último fica por cima
+  for (const a of novos.reverse()) {
+    const p = a.leitor_plataforma;
+    const atual = alertaCard[p];
+    alertaCard[p] = {
+      tipo: a.alerta, codigo: a.codigo, certa: a.pedido_plataforma,
+      ate: Date.now() + ALERTA_CARD_SEG * 1000,
+      qtd: atual && atual.ate > Date.now() ? atual.qtd + 1 : 1
+    };
+  }
+}
+
+function htmlAlertaCard(p) {
+  const a = alertaCard[p];
+  if (!a || a.ate <= Date.now()) return '';
+  const titulo = a.tipo === 'duplicado' ? 'Etiqueta repetida' : 'Etiqueta de outra plataforma';
+  const detalhe = a.tipo === 'duplicado'
+    ? `<code>${esc(a.codigo)}</code> já foi bipada hoje`
+    : `<code>${esc(a.codigo)}</code>${a.certa && a.certa !== p ? ` é da <b>${esc(nomePlat(a.certa))}</b>` : ''} — não é do ${esc(nomePlat(p))}`;
+  const mais = a.qtd > 1 ? ` <b>(${a.qtd} seguidas)</b>` : '';
+  return `<div class="alerta-card ${a.tipo}" role="alert">
+    <span class="icone">⚠</span><span class="titulo">${titulo}</span>
+    <span class="detalhe">${detalhe}${mais}</span></div>`;
+}
+
+// tira o aviso do card quando o tempo acaba
+function conferirAlertasCard() {
+  for (const p of PLATAFORMAS) {
+    const a = alertaCard[p.chave];
+    if (a && a.ate <= Date.now()) { delete alertaCard[p.chave]; desenharCartao(p); }
+  }
 }
 
 function classeColetaML(c) {
@@ -641,7 +727,7 @@ async function iniciarPainel() {
   $('carregando').hidden = true;
   $('tv').hidden = false;
   relogio();
-  setInterval(() => { relogio(); conferirMensagem(); }, 1000);
+  setInterval(() => { relogio(); conferirMensagem(); conferirAlertasCard(); }, 1000);
   conferirSom();
   tentarSomAutomatico();
   if (DEMO) await carregar();
