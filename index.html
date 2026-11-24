@@ -151,12 +151,6 @@
   }
   .relogio .hora { font: 800 clamp(36px, 8vh, 104px)/1 var(--f-display); font-variant-numeric: tabular-nums; }
   .relogio .data { font: 700 clamp(18px, 3.2vh, 40px)/1.05 var(--f-display); text-transform: uppercase; letter-spacing: .04em; text-align: left; margin-right: auto; }
-  .relogio button {
-    align-self: center; background: transparent; border: 2px solid var(--kraft-claro); color: var(--etiqueta);
-    border-radius: 50%; width: 38px; height: 38px; cursor: pointer; font-size: 18px; line-height: 1;
-    opacity: .55;
-  }
-  .relogio button:hover { opacity: 1; }
 
   /* ---------------------------------------------------------------- painéis da direita */
   .caixa h2 {
@@ -204,29 +198,51 @@
   }
   .alertas-bipe code { font: 700 1em var(--f-mono); }
 
-  /* ---------------------------------------------------------------- login / ajustes */
-  .tela-login { min-height: 100vh; display: grid; place-items: center; padding: 16px; }
-  .cartao-form {
-    background: var(--etiqueta); border-radius: var(--raio); width: min(420px, 100%);
-    box-shadow: 0 2px 0 var(--kraft-escuro), 0 10px 30px rgba(60, 40, 15, .3); overflow: hidden;
+  /* ---------------------------------------------------------------- mensagem do admin */
+  /* 1) chega em tela cheia, como uma etiqueta grande colada por cima do painel */
+  .msg-tela {
+    position: fixed; inset: 0; z-index: 50; display: grid; place-items: center; padding: 4vh 4vw;
+    background: rgba(22, 15, 6, .84);
   }
-  .cartao-form .fita { background: var(--tinta); color: var(--etiqueta); }
-  .cartao-form form { padding: 18px 20px 20px; display: grid; gap: 12px; }
-  label { display: grid; gap: 4px; font: 700 13px/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-suave); }
-  input[type=email], input[type=password], input[type=text], input[type=date] {
-    border: 2px solid var(--tinta); border-radius: 4px; padding: 10px 12px; font: 500 16px var(--f-texto); color: var(--tinta); background: #fff; text-transform: none; letter-spacing: 0;
+  .msg-cartao {
+    width: min(1500px, 100%); background: var(--etiqueta); border-radius: var(--raio); overflow: hidden;
+    box-shadow: 0 3px 0 var(--kraft-escuro), 0 30px 80px rgba(0, 0, 0, .5);
+    animation: colar .45s cubic-bezier(.2, 1.4, .4, 1) both;
   }
-  .botao { background: var(--tinta); color: var(--etiqueta); border: 0; border-radius: 4px; padding: 11px 16px; font: 800 18px/1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; cursor: pointer; }
-  .botao.secundario { background: transparent; color: var(--tinta); border: 2px solid var(--tinta); }
-  .erro-form { color: var(--alerta); font-weight: 600; min-height: 1.2em; margin: 0; }
-  .dica { font: 500 13px/1.35 var(--f-texto); color: var(--tinta-suave); margin: 0; }
+  .msg-cartao .fita {
+    background: var(--atencao); color: var(--tinta); display: flex; justify-content: space-between; align-items: baseline;
+    font: 800 clamp(22px, 4.2vh, 52px)/1 var(--f-display); letter-spacing: .08em; padding: clamp(10px, 1.6vh, 20px) clamp(18px, 2vw, 34px);
+    animation: piscar 1s steps(1) 4;
+  }
+  .msg-cartao .fita small { font: 700 .5em var(--f-texto); letter-spacing: 0; text-transform: none; }
+  .msg-texto {
+    margin: 0; padding: clamp(18px, 4vh, 56px) clamp(18px, 2.6vw, 48px) clamp(22px, 5vh, 64px);
+    font: 800 clamp(34px, 9vh, 128px)/1.02 var(--f-display); text-transform: uppercase; letter-spacing: .01em;
+    overflow-wrap: anywhere; white-space: pre-line;
+  }
+  .msg-cartao .rasgo { border-top: 2px dashed var(--linha); padding: clamp(8px, 1.2vh, 14px) clamp(18px, 2.6vw, 48px);
+    font: 600 clamp(13px, 1.9vh, 22px)/1.2 var(--f-texto); color: var(--tinta-suave); }
+  @keyframes colar { from { transform: translateY(-6vh) rotate(-1.5deg) scale(1.04); opacity: 0; } }
+  @keyframes piscar { 50% { background: var(--tinta); color: var(--atencao); } }
 
-  dialog { border: 0; padding: 0; border-radius: var(--raio); width: min(560px, calc(100vw - 32px)); background: var(--etiqueta); }
-  dialog::backdrop { background: rgba(30, 20, 8, .55); }
-  dialog form { padding: 16px 20px 20px; display: grid; gap: 14px; max-height: 80vh; overflow: auto; }
-  dialog fieldset { border: 2px solid var(--linha); border-radius: 4px; padding: 10px 12px 12px; display: grid; gap: 10px; margin: 0; }
-  dialog legend { font: 800 15px var(--f-display); text-transform: uppercase; padding: 0 4px; }
-  .acoes { display: flex; gap: 10px; justify-content: space-between; flex-wrap: wrap; }
+  /* 2) depois de alguns segundos vira uma faixa no topo, sem esconder os números */
+  .msg-faixa {
+    display: flex; align-items: center; gap: clamp(10px, 1.2vw, 20px);
+    background: var(--tinta); color: var(--etiqueta); border-radius: var(--raio);
+    padding: clamp(6px, 1vh, 12px) clamp(10px, 1vw, 16px);
+    font: 700 clamp(18px, 3.2vh, 40px)/1.1 var(--f-display); text-transform: uppercase;
+  }
+  .msg-faixa .tag { background: var(--atencao); color: var(--tinta); padding: 3px 10px; border-radius: 3px; font-weight: 800; letter-spacing: .06em; flex: none; }
+  .msg-faixa .txt { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .msg-faixa .ate { flex: none; font: 600 .55em var(--f-texto); text-transform: none; color: #cfcac0; }
+
+  /* aviso discreto quando o navegador ainda não deixou tocar som */
+  .som-off {
+    position: fixed; right: 12px; bottom: 12px; z-index: 40; border: 0; cursor: pointer;
+    background: var(--tinta); color: var(--etiqueta); border-radius: 999px; padding: 8px 14px;
+    font: 600 14px/1 var(--f-texto); opacity: .85;
+  }
+  @media (prefers-reduced-motion: reduce) { .msg-cartao, .msg-cartao .fita { animation: none; } }
 
   .carregando { color: var(--etiqueta); font: 700 24px var(--f-display); display: grid; place-items: center; height: 100vh; text-transform: uppercase; letter-spacing: .1em; }
   [hidden] { display: none !important; }
@@ -271,7 +287,6 @@
     <div class="relogio">
       <div class="data" id="data"></div>
       <div class="hora" id="hora">--:--</div>
-      <button type="button" id="abrir-ajustes" aria-label="Ajustes" title="Ajustes">⚙</button>
     </div>
 
     <article class="etiqueta caixa">
@@ -288,33 +303,16 @@
   <div class="rodape" id="rodape"></div>
 </main>
 
-<!-- Ajustes -->
-<dialog id="ajustes">
-  <div class="fita" style="background:var(--tinta);color:var(--etiqueta)">Ajustes</div>
-  <form id="form-ajustes" method="dialog">
-    <fieldset>
-      <legend>Horários fixos de coleta</legend>
-      <label>Shopee <input type="text" id="aj-shopee" placeholder="ex.: 10:00, 15:30"></label>
-      <label>TikTok Shop <input type="text" id="aj-tiktok" placeholder="ex.: 14:00"></label>
-      <p class="dica">Separe os horários por vírgula.</p>
-    </fieldset>
-    <fieldset id="aj-contas">
-      <legend>Nomes das contas do Mercado Livre</legend>
-    </fieldset>
-    <fieldset>
-      <legend>Bipagem</legend>
-      <label>Contar como pendente etiquetas impressas a partir de <input type="date" id="aj-inicio"></label>
-    </fieldset>
-    <p class="erro-form" id="aj-erro" role="alert"></p>
-    <div class="acoes">
-      <span></span>
-      <span>
-        <button class="botao secundario" type="button" id="aj-cancelar">Cancelar</button>
-        <button class="botao" type="button" id="aj-salvar">Salvar ajustes</button>
-      </span>
-    </div>
-  </form>
-</dialog>
+<!-- Mensagem do admin (tela cheia ao chegar) -->
+<div class="msg-tela" id="msg-tela" hidden role="alert" aria-live="assertive">
+  <div class="msg-cartao">
+    <div class="fita"><span>Aviso</span><small id="msg-quando"></small></div>
+    <p class="msg-texto" id="msg-texto"></p>
+    <div class="rasgo" id="msg-rodape"></div>
+  </div>
+</div>
+
+<button type="button" class="som-off" id="som-off" hidden>🔇 Toque aqui para ligar o som dos avisos</button>
 
 <script>
 // ============================================================== configuração
@@ -327,7 +325,6 @@ const PLATAFORMAS = [
   { chave: 'shopee', nome: 'Shopee', cor: 'var(--shopee)' },
   { chave: 'tiktok', nome: 'TikTok Shop', cor: 'var(--tiktok)' }
 ];
-// Depois de quanto tempo sem atualizar uma fonte é considerada "parada"
 // Minutos sem atualização antes de mostrar o aviso vermelho.
 // ML recarrega a cada 30 min, então só avisa se passar de uma rodada perdida.
 const LIMITE_MIN = { upseller: 10, ml: 70 };
@@ -339,7 +336,10 @@ const sb = DEMO ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
   auth: { persistSession: false, autoRefreshToken: false }
 });
 
-let estado = { resumo: [], contas: [], horarios: [], fontes: [], config: {}, alertas: [] };
+// Mensagem do admin: fica em tela cheia por estes segundos, depois vira faixa no topo.
+const MSG_TELA_CHEIA_SEG = 20;
+
+let estado = { resumo: [], contas: [], fontes: [], config: {}, alertas: [], mensagem: null };
 
 // ============================================================== utilidades
 const $ = id => document.getElementById(id);
@@ -366,21 +366,42 @@ function dataFull(s) {
 // ============================================================== carga de dados
 async function carregar() {
   if (DEMO) { estado = dadosDemo(); desenhar(); return; }
-  const [resumo, contas, horarios, fontes, config, alertas] = await Promise.all([
+  const [resumo, contas, fontes, config, alertas, mensagens] = await Promise.all([
     sb.from('painel_resumo').select('*'),
     sb.from('mercado_livre_contas').select('conta_id,nome,apelido,codigo_coleta,coletas,envios_full,atualizado_em'),
-    sb.from('horarios_coleta').select('*'),
     sb.from('status_fontes').select('*'),
     sb.from('configuracoes').select('*'),
-    sb.from('painel_alertas').select('*').limit(50)
+    sb.from('painel_alertas').select('*').limit(50),
+    sb.from('mensagens_painel').select('*').order('id', { ascending: false }).limit(1)
   ]);
-  const erro = [resumo, contas, horarios, fontes, config, alertas].find(r => r.error);
+  const erro = [resumo, contas, fontes, config, alertas].find(r => r.error);
   if (erro) throw erro.error;
   estado = {
-    resumo: resumo.data, contas: contas.data, horarios: horarios.data, fontes: fontes.data,
-    config: Object.fromEntries(config.data.map(c => [c.chave, c.valor])), alertas: alertas.data
+    resumo: resumo.data, contas: contas.data, fontes: fontes.data,
+    config: Object.fromEntries(config.data.map(c => [c.chave, c.valor])), alertas: alertas.data,
+    mensagem: mensagens.error ? null : (mensagens.data[0] || null)
   };
   desenhar();
+}
+
+// Evita duas buscas ao mesmo tempo; se pedirem outra no meio, faz mais uma no fim.
+let buscando = false, buscarDeNovo = false;
+async function atualizarAgora() {
+  if (buscando) { buscarDeNovo = true; return; }
+  buscando = true;
+  try { await carregar(); } catch (e) { mostrarErroCarga(e); }
+  buscando = false;
+  if (buscarDeNovo) { buscarDeNovo = false; atualizarAgora(); }
+}
+
+// Ao vivo: quando o app de administração muda algo, o banco avisa o painel na hora.
+function ouvirMudancas() {
+  let espera;
+  const mudou = () => { clearTimeout(espera); espera = setTimeout(atualizarAgora, 150); };
+  const canal = sb.channel('painel-ao-vivo');
+  for (const tabela of ['mensagens_painel', 'configuracoes', 'mercado_livre_contas'])
+    canal.on('postgres_changes', { event: '*', schema: 'public', table: tabela }, mudou);
+  canal.subscribe();
 }
 
 function mostrarErroCarga(e) {
@@ -390,7 +411,7 @@ function mostrarErroCarga(e) {
 
 // Busca os dados a cada poucos segundos (sem sobrepor buscas).
 async function cicloAtualizacao() {
-  try { await carregar(); } catch (e) { mostrarErroCarga(e); }
+  await atualizarAgora();
   setTimeout(cicloAtualizacao, ATUALIZAR_SEG * 1000);
 }
 
@@ -399,6 +420,7 @@ function desenhar() {
   for (const p of PLATAFORMAS) desenharCartao(p);
   desenharColetas();
   desenharFull();
+  desenharMensagem();
   desenharAvisos();
 }
 
@@ -491,7 +513,11 @@ function desenharAvisos() {
     if (min > limite) avisos.push(`⚠ ${nome}: sem atualizar há ${min === Infinity ? 'muito tempo' : Math.round(min) + ' min'}. Verifique o navegador da expedição.${f.erro ? ' — Último erro: ' + f.erro : ''}`);
   }
   if (!estado.fontes.some(f => f.fonte === 'upseller')) avisos.push('⚠ UpSeller ainda não enviou dados. Verifique a extensão no navegador da expedição.');
-  $('avisos').innerHTML = avisos.map(a => `<div class="aviso">${esc(a)}</div>`).join('');
+  const m = mensagemNoAr();
+  const faixa = m && $('msg-tela').hidden
+    ? `<div class="msg-faixa"><span class="tag">Aviso</span><span class="txt">${esc(m.texto)}</span><span class="ate">até ${esc(horaSP(m.expira_em))}</span></div>`
+    : '';
+  $('avisos').innerHTML = faixa + avisos.map(a => `<div class="aviso">${esc(a)}</div>`).join('');
 
   // Bipes com problema hoje
   const al = estado.alertas || [];
@@ -514,59 +540,88 @@ function relogio() {
     d.toLocaleDateString('pt-BR', { day: '2-digit', month: '2-digit', year: 'numeric', timeZone: 'America/Sao_Paulo' });
 }
 
-// ============================================================== ajustes
-function abrirAjustes() {
-  const h = k => (estado.horarios.find(x => x.plataforma === k)?.horarios || []).join(', ');
-  $('aj-shopee').value = h('shopee');
-  $('aj-tiktok').value = h('tiktok');
-  $('aj-inicio').value = estado.config.inicio_bipagem || '';
-  const fs = $('aj-contas');
-  fs.querySelectorAll('label').forEach(l => l.remove());
-  for (const c of [...estado.contas].sort((a, b) => (a.nome || '').localeCompare(b.nome || ''))) {
-    const l = document.createElement('label');
-    l.textContent = c.nome || c.conta_id;
-    const i = document.createElement('input');
-    i.type = 'text'; i.value = c.apelido || ''; i.dataset.conta = c.conta_id; i.placeholder = 'nome curto para a TV';
-    l.append(i);
-    fs.append(l);
+// ============================================================== mensagem do admin
+const horaSP = iso => new Date(iso).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit', timeZone: 'America/Sao_Paulo' });
+function mensagemNoAr() {
+  const m = estado.mensagem;
+  return m && new Date(m.expira_em).getTime() > Date.now() ? m : null;
+}
+
+let msgAnunciada = null;   // id da última mensagem que já tocou o som
+let msgTelaCheiaAte = 0;   // até quando a mensagem fica em tela cheia
+let msgChaveDesenho = '';
+
+function desenharMensagem() {
+  const m = mensagemNoAr();
+  if (!m) { $('msg-tela').hidden = true; msgTelaCheiaAte = 0; return; }
+  if (m.id !== msgAnunciada) {
+    msgAnunciada = m.id;
+    // Só "chega" com tela cheia e som se acabou de ser enviada
+    // (se a TV for ligada no meio de uma mensagem, ela aparece direto como faixa).
+    if (Date.now() - new Date(m.criada_em).getTime() < 2 * 60000) {
+      msgTelaCheiaAte = Date.now() + MSG_TELA_CHEIA_SEG * 1000;
+      if (m.som) tocarAviso();
+    }
   }
-  $('aj-erro').textContent = '';
-  $('ajustes').showModal();
+  const dur = Math.round((new Date(m.expira_em) - new Date(m.criada_em)) / 60000);
+  $('msg-texto').textContent = m.texto;
+  $('msg-quando').textContent = `enviado às ${horaSP(m.criada_em)}`;
+  $('msg-rodape').textContent = `Fica no painel por ${dur} min, até ${horaSP(m.expira_em)}.`;
+  $('msg-tela').hidden = Date.now() >= msgTelaCheiaAte;
 }
 
-function lerHorarios(s) {
-  const lista = s.split(/[,;\s]+/).map(x => x.trim()).filter(Boolean);
-  for (const x of lista) if (!/^([01]?\d|2[0-3]):[0-5]\d$/.test(x)) throw new Error(`Horário inválido: "${x}". Use o formato 14:30.`);
-  return lista.map(x => x.padStart(5, '0'));
+// Chamada a cada segundo: passa de tela cheia para faixa e tira a mensagem quando vence.
+function conferirMensagem() {
+  if (!estado.mensagem) return;
+  desenharMensagem();
+  const chave = (mensagemNoAr()?.id ?? '-') + '|' + $('msg-tela').hidden;
+  if (chave !== msgChaveDesenho) { msgChaveDesenho = chave; desenharAvisos(); }
 }
 
-async function salvarAjustes() {
-  try {
-    if (DEMO) { $('ajustes').close(); return; }
-    const apelidos = {};
-    $('aj-contas').querySelectorAll('input').forEach(i => { apelidos[i.dataset.conta] = i.value.trim(); });
-    const { error } = await sb.rpc('painel_salvar_ajustes', {
-      p_shopee: lerHorarios($('aj-shopee').value),
-      p_tiktok: lerHorarios($('aj-tiktok').value),
-      p_inicio: $('aj-inicio').value || null,
-      p_apelidos: apelidos
-    });
-    if (error) throw error;
-    $('ajustes').close();
-    await carregar();
-  } catch (e) {
-    $('aj-erro').textContent = e.message || String(e);
+// ============================================================== som
+// O navegador só libera som depois de um toque/tecla na página. Se ainda não
+// liberou, aparece um botão discreto no canto; um toque em qualquer lugar resolve.
+let audio = null;
+function contextoAudio() {
+  if (!audio) { const C = window.AudioContext || window.webkitAudioContext; if (C) audio = new C(); }
+  return audio;
+}
+function conferirSom() {
+  const ctx = contextoAudio();
+  $('som-off').hidden = !ctx || ctx.state === 'running';
+}
+function liberarSom() {
+  const ctx = contextoAudio();
+  if (ctx && ctx.state !== 'running') ctx.resume().then(conferirSom, conferirSom);
+}
+// "Ding-dong" de três notas, duas vezes: chama atenção sem ser sirene.
+function tocarAviso() {
+  const ctx = contextoAudio();
+  if (!ctx) return;
+  if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  const t0 = ctx.currentTime + 0.05;
+  const notas = [[784, 0], [1047, 0.2], [1319, 0.4], [784, 1.3], [1047, 1.5], [1319, 1.7]];
+  for (const [freq, ini] of notas) {
+    const o = ctx.createOscillator(), g = ctx.createGain();
+    o.type = 'triangle';
+    o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, t0 + ini);
+    g.gain.exponentialRampToValueAtTime(0.6, t0 + ini + 0.02);
+    g.gain.exponentialRampToValueAtTime(0.0001, t0 + ini + 0.9);
+    o.connect(g).connect(ctx.destination);
+    o.start(t0 + ini);
+    o.stop(t0 + ini + 1);
   }
 }
-
 // ============================================================== início
 async function iniciarPainel() {
   $('carregando').hidden = true;
   $('tv').hidden = false;
   relogio();
-  setInterval(relogio, 1000);
+  setInterval(() => { relogio(); conferirMensagem(); }, 1000);
+  conferirSom();
   if (DEMO) await carregar();
-  else cicloAtualizacao();
+  else { cicloAtualizacao(); ouvirMudancas(); }
   manterTelaLigada();
 }
 
@@ -588,9 +643,9 @@ document.addEventListener('mousemove', () => {
   ocioso = setTimeout(() => document.body.classList.add('ocioso'), 4000);
 });
 
-$('abrir-ajustes').addEventListener('click', abrirAjustes);
-$('aj-cancelar').addEventListener('click', () => $('ajustes').close());
-$('aj-salvar').addEventListener('click', salvarAjustes);
+// qualquer toque ou tecla libera o som; tocar na mensagem em tela cheia a recolhe para a faixa
+for (const ev of ['pointerdown', 'keydown']) document.addEventListener(ev, liberarSom);
+$('msg-tela').addEventListener('click', () => { msgTelaCheiaAte = 0; conferirMensagem(); });
 iniciarPainel();
 
 // ============================================================== dados de demonstração (?demo)
@@ -615,7 +670,10 @@ function dadosDemo() {
       { conta_id: '4', nome: '52.749.128 EDINEIA', apelido: 'LK ECOM', codigo_coleta: 'DEF210BE', atualizado_em: iso(1),
         coletas: [{ tipo: 'prevista', status: 'SERVIÇO ATRASADO', inicio: '15:00', fim: '17:00' }], envios_full: [] }
     ],
-    horarios: [{ plataforma: 'shopee', horarios: ['10:00', '15:30'] }, { plataforma: 'tiktok', horarios: ['14:00'] }],
+    mensagem: new URLSearchParams(location.search).has('msg')
+      ? { id: 1, texto: 'Coleta da Shopee antecipada para 14h. Separar tudo até 13h45!', som: true,
+          criada_em: iso(0), expira_em: iso(-30) }
+      : null,
     fontes: [{ fonte: 'upseller', atualizado_em: iso(0.3) }, { fonte: 'ml:1', atualizado_em: iso(1) }, { fonte: 'ml:2', atualizado_em: iso(1) }, { fonte: 'ml:3', atualizado_em: iso(2) }, { fonte: 'ml:4', atualizado_em: iso(1) }],
     config: { inicio_bipagem: '2026-11-24' },
     alertas: [{ codigo: 'BR2659750094630', alerta: 'plataforma_errada' }, { codigo: '48609412559', alerta: 'duplicado' }]
