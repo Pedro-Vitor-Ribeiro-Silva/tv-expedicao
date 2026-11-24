@@ -668,7 +668,10 @@ function vozPtBr() {
   const pt = vozes.filter(v => /^pt(-|_)BR/i.test(v.lang));
   const local = pt.filter(v => v.localService);
   const porNome = lista => ['francisca', 'maria', 'thalita', 'luciana', 'daniel', 'antonio'].map(n => lista.find(v => v.name.toLowerCase().includes(n))).find(Boolean);
-  return porNome(local) || local[0]
+  // 1º: vozes "naturais" (neurais) — no Microsoft Edge: "Francisca/Antonio Online (Natural)"
+  const naturais = pt.filter(v => /natural|neural/i.test(v.name));
+  return porNome(naturais) || naturais[0]
+    || porNome(local) || local[0]
     || pt.find(v => /google/i.test(v.name)) || pt[0]
     || vozes.find(v => /^pt/i.test(v.lang)) || null;
 }
