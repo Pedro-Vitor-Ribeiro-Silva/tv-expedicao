@@ -658,28 +658,104 @@ function tocarAviso() {
   return 3600;
 }
 
-// Voz: lê a mensagem em português, no volume máximo, duas vezes.
+// ============================================================== voz
+// Lê a mensagem em português, no volume máximo, duas vezes.
+// Ordem de tentativa: leitura do Fully Kiosk Browser (TV Box Android) -> voz do navegador.
+// Prefere vozes instaladas no aparelho (funcionam sem internet e não "emudecem" como a voz online).
+const vozDiag = { ultimoErro: null, ultimoInicio: null, ultimaTentativa: null, metodo: null };
 function vozPtBr() {
   const vozes = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
   const pt = vozes.filter(v => /^pt(-|_)BR/i.test(v.lang));
-  return pt.find(v => /google/i.test(v.name)) || pt.find(v => /francisca|thalita|antonio|maria|daniel/i.test(v.name)) || pt[0]
+  const local = pt.filter(v => v.localService);
+  return local.find(v => /francisca|thalita|maria|daniel|antonio/i.test(v.name)) || local[0]
+    || pt.find(v => /google/i.test(v.name)) || pt[0]
     || vozes.find(v => /^pt/i.test(v.lang)) || null;
 }
-if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {}; // carrega a lista de vozes cedo
-function falar(texto) {
-  if (!window.speechSynthesis || !texto) return;
-  speechSynthesis.cancel();
+// a lista de vozes chega depois de carregar a página em alguns navegadores
+function esperarVozes(ms) {
+  return new Promise(ok => {
+    if (!window.speechSynthesis || speechSynthesis.getVoices().length) return ok();
+    const t = setTimeout(ok, ms);
+    speechSynthesis.addEventListener?.('voiceschanged', () => { clearTimeout(t); ok(); }, { once: true });
+  });
+}
+if (window.speechSynthesis) speechSynthesis.getVoices();
+
+let vozManter = null;
+async function falar(texto) {
+  if (!texto) return;
+  vozDiag.ultimaTentativa = new Date().toLocaleTimeString('pt-BR');
+  vozDiag.ultimoErro = null;
+  const frases = [`Atenção! ${texto}`, texto];
+
+  // Fully Kiosk Browser: tem leitura de texto própria (o WebView do Android não tem a do navegador)
+  if (window.fully && typeof fully.textToSpeech === 'function') {
+    vozDiag.metodo = 'Fully Kiosk';
+    try { fully.textToSpeech(frases.join('. '), 'pt_BR'); vozDiag.ultimoInicio = vozDiag.ultimaTentativa; }
+    catch (e) { vozDiag.ultimoErro = String(e); }
+    desenharDiag();
+    return;
+  }
+  if (!window.speechSynthesis) { vozDiag.metodo = 'nenhum'; vozDiag.ultimoErro = 'este navegador não tem leitura de texto'; desenharDiag(); return; }
+  vozDiag.metodo = 'navegador';
+  await esperarVozes(2000);
+  // cancelar e falar no mesmo instante faz o Chrome descartar a fala: dá um respiro
+  if (speechSynthesis.speaking || speechSynthesis.pending) { speechSynthesis.cancel(); await new Promise(r => setTimeout(r, 300)); }
+  speechSynthesis.resume();
   const voz = vozPtBr();
-  for (const frase of [`Atenção! ${texto}`, texto]) {
+  let comecou = false;
+  for (const frase of frases) {
     const u = new SpeechSynthesisUtterance(frase);
     u.lang = 'pt-BR';
     if (voz) u.voice = voz;
     u.volume = 1;
     u.rate = 0.95;
     u.pitch = 1;
+    u.onstart = () => { comecou = true; vozDiag.ultimoInicio = new Date().toLocaleTimeString('pt-BR'); desenharDiag(); };
+    u.onerror = e => { vozDiag.ultimoErro = e.error || 'erro'; desenharDiag(); };
     speechSynthesis.speak(u);
   }
-}// ============================================================== início
+  // Chrome corta falas longas: "cutuca" a fila enquanto fala
+  clearInterval(vozManter);
+  vozManter = setInterval(() => {
+    if (!speechSynthesis.speaking) { clearInterval(vozManter); return; }
+    speechSynthesis.pause(); speechSynthesis.resume();
+  }, 10000);
+  setTimeout(() => { if (!comecou && !vozDiag.ultimoErro) { vozDiag.ultimoErro = 'a fala não começou (som bloqueado ou sem voz)'; desenharDiag(); } }, 4000);
+}
+
+// ============================================================== diagnóstico (?diag)
+// Abra https://tv-expedicao.vercel.app/?diag na TV para ver se o som e a voz funcionam ali.
+const DIAG = new URLSearchParams(location.search).has('diag');
+function desenharDiag() {
+  if (!DIAG) return;
+  let box = document.getElementById('diag');
+  if (!box) {
+    box = document.createElement('div');
+    box.id = 'diag';
+    box.style.cssText = 'position:fixed;left:16px;bottom:16px;z-index:60;max-width:min(720px,calc(100vw - 32px));background:#141414;color:#fff;' +
+      'font:500 16px/1.35 system-ui,sans-serif;padding:14px 18px;border-radius:10px;box-shadow:0 8px 30px rgba(0,0,0,.5)';
+    document.body.appendChild(box);
+    box.addEventListener('click', e => { if (e.target.id === 'diag-testar') { const ms = tocarAviso(); setTimeout(() => falar('Teste de voz do painel da expedição.'), ms); } });
+  }
+  const ss = !!window.speechSynthesis;
+  const vozes = ss ? speechSynthesis.getVoices() : [];
+  const pt = vozes.filter(v => /^pt/i.test(v.lang)).map(v => v.name + (v.localService ? '' : ' (online)'));
+  const v = vozPtBr();
+  const linha = (rot, val, ok) => `<div>${ok === true ? '✅' : ok === false ? '❌' : '•'} <b>${rot}:</b> ${esc(val)}</div>`;
+  box.innerHTML = `<div style="font-weight:800;margin-bottom:6px">Diagnóstico de som e voz</div>` +
+    linha('Som (toque)', audio ? audio.state : 'ainda não iniciado', audio ? audio.state === 'running' : null) +
+    linha('Leitura do navegador', ss ? 'existe' : 'não existe', ss) +
+    linha('Leitura do Fully Kiosk', window.fully && typeof fully.textToSpeech === 'function' ? 'existe' : 'não', null) +
+    linha('Vozes em português', pt.length ? pt.join(', ') : 'nenhuma', pt.length > 0) +
+    linha('Voz escolhida', v ? v.name : '—', !!v) +
+    linha('Última tentativa', vozDiag.ultimaTentativa ? `${vozDiag.ultimaTentativa} (${vozDiag.metodo})` : '—', null) +
+    linha('Começou a falar', vozDiag.ultimoInicio || '—', vozDiag.ultimoInicio ? true : null) +
+    linha('Erro', vozDiag.ultimoErro || 'nenhum', vozDiag.ultimoErro ? false : null) +
+    `<button id="diag-testar" style="margin-top:10px;font:700 18px system-ui;padding:10px 18px;border:0;border-radius:8px;background:#e8a200;cursor:pointer">▶ Testar som e voz</button>`;
+}
+if (DIAG) { setInterval(desenharDiag, 1000); if (window.speechSynthesis) speechSynthesis.addEventListener?.('voiceschanged', desenharDiag); }
+// ============================================================== início
 async function iniciarPainel() {
   $('carregando').hidden = true;
   $('tv').hidden = false;
