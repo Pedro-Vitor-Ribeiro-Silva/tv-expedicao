@@ -91,7 +91,7 @@
   .corpo {
     flex: 1; min-height: 0;
     display: grid;
-    grid-template-columns: 1fr 1fr 1.35fr 1fr;
+    grid-template-columns: 1fr 1fr 1fr 1.3fr 1fr;
     gap: clamp(6px, .8vw, 14px);
     padding: clamp(6px, 1vh, 14px) clamp(12px, 1.4vw, 22px) 0;
   }
@@ -99,6 +99,7 @@
   .campo:first-child { border-left: 0; padding-left: 0; }
   .rotulo { font: 700 clamp(11px, 1.5vh, 18px)/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: var(--tinta-suave); }
   .valor { font: 800 clamp(30px, 7.2vh, 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; }
+  .nota { font: 500 clamp(10px, 1.3vh, 15px)/1.1 var(--f-texto); color: var(--tinta-suave); margin-top: 2px; }
   /* assinatura: bloco preto invertido, como o código de triagem da etiqueta */
   .campo.pendente {
     background: var(--tinta); color: var(--etiqueta);
@@ -230,7 +231,7 @@
     .avisos { order: -2; }
     .relogio { justify-content: space-between; }
     .corpo { grid-template-columns: 1fr 1fr; row-gap: 10px; padding-bottom: 4px; }
-    .campo:nth-child(3) { border-left: 0; padding-left: 0; }
+    .campo:nth-child(3), .campo:nth-child(5) { border-left: 0; padding-left: 0; }
     .campo.pendente { padding-left: 10px; }
     .valor { font-size: 44px; }
     .campo.pendente .valor { font-size: 52px; }
@@ -412,6 +413,7 @@ function desenharCartao(p) {
     <div class="corpo">
       <div class="campo"><span class="rotulo">Impressão pendente</span><span class="valor">${fmt(r.impressao_pendente)}</span></div>
       <div class="campo"><span class="rotulo">Impresso</span><span class="valor">${fmt(imp)}</span></div>
+      <div class="campo"><span class="rotulo">Enviado</span><span class="valor">${fmt(r.enviado)}</span><span class="nota">já saiu na coleta</span></div>
       <div class="campo pendente ${r.pendente ? '' : 'zerado'}"><span class="rotulo">Pendente</span><span class="valor">${fmt(r.pendente)}</span></div>
       <div class="campo"><span class="rotulo">Bipado</span><span class="valor">${fmt(r.bipado)}</span></div>
     </div>
@@ -598,9 +600,9 @@ function dadosDemo() {
   const iso = m => new Date(Date.now() - m * 60000).toISOString();
   return {
     resumo: [
-      { plataforma: 'mercado', impressao_pendente: 78, impresso: 230, bipado: 219, pendente: 11 },
-      { plataforma: 'shopee', impressao_pendente: 0, impresso: 412, bipado: 412, pendente: 0 },
-      { plataforma: 'tiktok', impressao_pendente: 28, impresso: 64, bipado: 21, pendente: 43 }
+      { plataforma: 'mercado', impressao_pendente: 78, impresso: 230, enviado: 17, bipado: 219, pendente: 11 },
+      { plataforma: 'shopee', impressao_pendente: 0, impresso: 412, enviado: 120, bipado: 412, pendente: 0 },
+      { plataforma: 'tiktok', impressao_pendente: 28, impresso: 64, enviado: 0, bipado: 21, pendente: 43 }
     ],
     contas: [
       { conta_id: '1', nome: 'D K COMERCIO', apelido: 'FORTFIOS', codigo_coleta: '53A1A17E', atualizado_em: iso(1),
