@@ -315,7 +315,7 @@ const sb = DEMO ? null : supabase.createClient(SUPABASE_URL, SUPABASE_ANON, {
 // Mensagem do admin: fica em tela cheia por estes segundos, depois vira faixa no topo.
 const MSG_TELA_CHEIA_SEG = 20;
 
-let estado = { resumo: [], contas: [], fontes: [], config: {}, mensagem: null };
+let estado = { resumo: [], contas: [], fontes: [], config: {}, mensagens: [] };
 
 // ============================================================== utilidades
 const $ = id => document.getElementById(id);
@@ -351,14 +351,14 @@ async function carregar() {
     sb.from('mercado_livre_contas').select('conta_id,nome,apelido,codigo_coleta,coletas,envios_full,atualizado_em'),
     sb.from('status_fontes').select('*'),
     sb.from('configuracoes').select('*'),
-    sb.from('mensagens_painel').select('*').order('id', { ascending: false }).limit(1)
+    sb.from('mensagens_painel').select('*').gt('expira_em', new Date().toISOString()).order('mostrar_em').limit(50)
   ]);
   const erro = [resumo, contas, fontes, config].find(r => r.error);
   if (erro) throw erro.error;
   estado = {
     resumo: resumo.data, contas: contas.data, fontes: fontes.data,
     config: Object.fromEntries(config.data.map(c => [c.chave, c.valor])),
-    mensagem: mensagens.error ? null : (mensagens.data[0] || null)
+    mensagens: mensagens.error ? [] : (mensagens.data || [])
   };
   desenhar();
 }
@@ -531,9 +531,16 @@ function duracao(seg) {
   const h = Math.floor(seg / 3600), m = Math.floor(seg % 3600 / 60), s = seg % 60;
   return [h && `${h} h`, m && `${m} min`, s && `${s} s`].filter(Boolean).join(' ');
 }
+// No ar = já começou (mostrar_em) e ainda não venceu; vale a que começou por último.
+// As agendadas já vêm na lista e entram sozinhas na hora certa (conferido a cada segundo).
 function mensagemNoAr() {
-  const m = estado.mensagem;
-  return m && new Date(m.expira_em).getTime() > Date.now() ? m : null;
+  const agora = Date.now();
+  let noAr = null;
+  for (const m of estado.mensagens || []) {
+    const ini = new Date(m.mostrar_em || m.criada_em).getTime();
+    if (ini <= agora && new Date(m.expira_em).getTime() > agora && (!noAr || ini >= new Date(noAr.mostrar_em || noAr.criada_em).getTime())) noAr = m;
+  }
+  return noAr;
 }
 
 let msgAnunciada = null;   // id da última mensagem que já tocou o som
@@ -545,23 +552,24 @@ function desenharMensagem() {
   if (!m) { $('msg-tela').hidden = true; msgTelaCheiaAte = 0; return; }
   if (m.id !== msgAnunciada) {
     msgAnunciada = m.id;
-    // Só "chega" com tela cheia e som se acabou de ser enviada
+    // Só "chega" com tela cheia, toque e voz se acabou de entrar no ar
     // (se a TV for ligada no meio de uma mensagem, ela aparece direto como faixa).
-    if (Date.now() - new Date(m.criada_em).getTime() < 2 * 60000) {
+    if (Date.now() - new Date(m.mostrar_em || m.criada_em).getTime() < 2 * 60000) {
       msgTelaCheiaAte = Date.now() + MSG_TELA_CHEIA_SEG * 1000;
-      if (m.som) tocarAviso();
+      const espera = m.som ? tocarAviso() : 0;
+      if (m.voz !== false) setTimeout(() => falar(m.texto), espera);
     }
   }
   const resta = Math.max(0, Math.ceil((new Date(m.expira_em) - Date.now()) / 1000));
   $('msg-texto').textContent = m.texto;
-  $('msg-quando').textContent = `enviado às ${horaSP(m.criada_em)}`;
+  $('msg-quando').textContent = `enviado às ${horaSP(m.mostrar_em || m.criada_em)}`;
   $('msg-rodape').textContent = `Some do painel em ${duracao(resta)}.`;
   $('msg-tela').hidden = Date.now() >= msgTelaCheiaAte;
 }
 
 // Chamada a cada segundo: passa de tela cheia para faixa e tira a mensagem quando vence.
 function conferirMensagem() {
-  if (!estado.mensagem) return;
+  if (!(estado.mensagens || []).length) return;
   desenharMensagem();
   // a faixa mostra a contagem regressiva, então redesenha a cada segundo enquanto houver mensagem
   const noAr = mensagemNoAr();
@@ -613,26 +621,65 @@ function liberarSom() {
   if (ctx && ctx.state !== 'running') ctx.resume().then(conferirSom, conferirSom);
 }
 for (const ev of ['fullscreenchange', 'webkitfullscreenchange', 'resize']) addEventListener(ev, () => setTimeout(conferirSom, 300));
-// "Ding-dong" de três notas, duas vezes: chama atenção sem ser sirene.
+// Saída bem alta: ganho forte seguido de um limitador (fica no volume máximo sem estourar).
+let saidaAlta = null;
+function saida(ctx) {
+  if (saidaAlta) return saidaAlta;
+  const lim = ctx.createDynamicsCompressor();
+  lim.threshold.value = -8; lim.knee.value = 0; lim.ratio.value = 20; lim.attack.value = 0.002; lim.release.value = 0.15;
+  const ganho = ctx.createGain(); ganho.gain.value = 3.5;
+  ganho.connect(lim).connect(ctx.destination);
+  return (saidaAlta = ganho);
+}
+// "Ding-dong" de três notas, três vezes, bem alto: chama atenção sem ser sirene.
+// Devolve quanto tempo (ms) o toque dura, para a voz começar logo depois.
 function tocarAviso() {
   const ctx = contextoAudio();
-  if (!ctx) return;
+  if (!ctx) return 0;
   if (ctx.state !== 'running') ctx.resume().catch(() => {});
+  const out = saida(ctx);
   const t0 = ctx.currentTime + 0.05;
-  const notas = [[784, 0], [1047, 0.2], [1319, 0.4], [784, 1.3], [1047, 1.5], [1319, 1.7]];
+  const notas = [];
+  for (const rep of [0, 1.2, 2.4]) notas.push([784, rep], [1047, rep + 0.2], [1319, rep + 0.4]);
   for (const [freq, ini] of notas) {
-    const o = ctx.createOscillator(), g = ctx.createGain();
-    o.type = 'triangle';
-    o.frequency.value = freq;
-    g.gain.setValueAtTime(0.0001, t0 + ini);
-    g.gain.exponentialRampToValueAtTime(0.6, t0 + ini + 0.02);
-    g.gain.exponentialRampToValueAtTime(0.0001, t0 + ini + 0.9);
-    o.connect(g).connect(ctx.destination);
-    o.start(t0 + ini);
-    o.stop(t0 + ini + 1);
+    // duas ondas juntas (som mais "cheio" e mais alto que uma só)
+    for (const [tipo, mult, vol] of [['square', 1, 0.5], ['triangle', 2, 0.6]]) {
+      const o = ctx.createOscillator(), g = ctx.createGain();
+      o.type = tipo;
+      o.frequency.value = freq * mult;
+      g.gain.setValueAtTime(0.0001, t0 + ini);
+      g.gain.exponentialRampToValueAtTime(vol, t0 + ini + 0.015);
+      g.gain.exponentialRampToValueAtTime(0.0001, t0 + ini + 0.85);
+      o.connect(g).connect(out);
+      o.start(t0 + ini);
+      o.stop(t0 + ini + 0.9);
+    }
   }
+  return 3600;
 }
-// ============================================================== início
+
+// Voz: lê a mensagem em português, no volume máximo, duas vezes.
+function vozPtBr() {
+  const vozes = (window.speechSynthesis && speechSynthesis.getVoices()) || [];
+  const pt = vozes.filter(v => /^pt(-|_)BR/i.test(v.lang));
+  return pt.find(v => /google/i.test(v.name)) || pt.find(v => /francisca|thalita|antonio|maria|daniel/i.test(v.name)) || pt[0]
+    || vozes.find(v => /^pt/i.test(v.lang)) || null;
+}
+if (window.speechSynthesis) speechSynthesis.onvoiceschanged = () => {}; // carrega a lista de vozes cedo
+function falar(texto) {
+  if (!window.speechSynthesis || !texto) return;
+  speechSynthesis.cancel();
+  const voz = vozPtBr();
+  for (const frase of [`Atenção! ${texto}`, texto]) {
+    const u = new SpeechSynthesisUtterance(frase);
+    u.lang = 'pt-BR';
+    if (voz) u.voice = voz;
+    u.volume = 1;
+    u.rate = 0.95;
+    u.pitch = 1;
+    speechSynthesis.speak(u);
+  }
+}// ============================================================== início
 async function iniciarPainel() {
   $('carregando').hidden = true;
   $('tv').hidden = false;
@@ -690,10 +737,10 @@ function dadosDemo() {
       { conta_id: '4', nome: '52.749.128 EDINEIA', apelido: 'LK ECOM', codigo_coleta: 'DEF210BE', atualizado_em: iso(1),
         coletas: [{ tipo: 'prevista', status: 'SERVIÇO ATRASADO', inicio: '15:00', fim: '17:00' }], envios_full: [] }
     ],
-    mensagem: new URLSearchParams(location.search).has('msg')
-      ? { id: 1, texto: 'Coleta da Shopee antecipada para 14h. Separar tudo até 13h45!', som: true,
-          criada_em: iso(0), expira_em: iso(-30) }
-      : null,
+    mensagens: new URLSearchParams(location.search).has('msg')
+      ? [{ id: 1, texto: 'Coleta da Shopee antecipada para 14h. Separar tudo até 13h45!', som: true, voz: true,
+          criada_em: iso(0), mostrar_em: iso(0), expira_em: iso(-30) }]
+      : [],
     fontes: [{ fonte: 'upseller', atualizado_em: iso(0.3) }, { fonte: 'ml:1', atualizado_em: iso(1) }, { fonte: 'ml:2', atualizado_em: iso(1) }, { fonte: 'ml:3', atualizado_em: iso(2) }, { fonte: 'ml:4', atualizado_em: iso(1) }],
     config: {}
   };
