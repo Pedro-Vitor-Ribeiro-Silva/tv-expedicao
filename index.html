@@ -601,16 +601,35 @@ function contextoAudio() {
 // ex.: Chrome com --autoplay-policy=no-user-gesture-required, ou Fully Kiosk com áudio liberado).
 function tentarSomAutomatico() {
   liberarSom();
-  setInterval(() => { if (audio && audio.state !== 'running') liberarSom(); }, 10000);
+  setInterval(() => { if (audio && audio.state !== 'running') audio.resume().then(conferirSom, conferirSom); }, 10000);
+}
+// Tela cheia: o navegador só deixa entrar depois de um toque/tecla. O primeiro toque
+// (ou OK do controle) já entra; se alguém sair, o próximo toque volta. No Chrome com
+// --kiosk a janela já ocupa a tela toda e nada aparece.
+const telaGrande = () => Math.min(screen.width, screen.height) >= 600 && !matchMedia('(pointer: coarse) and (max-width: 900px)').matches;
+const emTelaCheia = () => !!(document.fullscreenElement || document.webkitFullscreenElement) ||
+  (innerHeight >= screen.height - 2 && innerWidth >= screen.width - 2);
+function entrarTelaCheia() {
+  if (!telaGrande() || emTelaCheia()) return;
+  const el = document.documentElement;
+  const pedir = el.requestFullscreen || el.webkitRequestFullscreen;
+  if (pedir) Promise.resolve(pedir.call(el, { navigationUI: 'hide' })).catch(() => {}).finally(conferirSom);
 }
 function conferirSom() {
   const ctx = contextoAudio();
-  $('som-off').hidden = !ctx || ctx.state === 'running';
+  const semSom = !!ctx && ctx.state !== 'running';
+  const semTela = telaGrande() && !emTelaCheia();
+  const b = $('som-off');
+  b.hidden = !semSom && !semTela;
+  b.textContent = semSom && semTela ? '⛶ Toque aqui para tela cheia e som'
+    : semSom ? '🔇 Toque aqui para ligar o som dos avisos' : '⛶ Toque aqui para tela cheia';
 }
 function liberarSom() {
+  entrarTelaCheia();
   const ctx = contextoAudio();
   if (ctx && ctx.state !== 'running') ctx.resume().then(conferirSom, conferirSom);
 }
+for (const ev of ['fullscreenchange', 'webkitfullscreenchange', 'resize']) addEventListener(ev, () => setTimeout(conferirSom, 300));
 // "Ding-dong" de três notas, duas vezes: chama atenção sem ser sirene.
 function tocarAviso() {
   const ctx = contextoAudio();
