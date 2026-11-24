@@ -12,7 +12,7 @@
   :root {
     /* papelão kraft + etiqueta térmica */
     --kraft: #a8825a;
-    --kraft-escuro: #8a6943;
+    --kraft-escuro: #b84400; /* sombra das caixas sobre o fundo laranja */
     --kraft-claro: #c29e74;
     --etiqueta: #fbfaf6;
     --tinta: #141414;
@@ -37,8 +37,8 @@
   html, body { margin: 0; height: 100%; }
   body {
     background:
-      repeating-linear-gradient(90deg, rgba(0,0,0,.035) 0 2px, transparent 2px 7px),
-      var(--kraft);
+      radial-gradient(ellipse 120% 90% at 50% 0%, #ff8c00 0%, #ff7400 45%, #f25d00 100%) fixed,
+      #ff7400;
     color: var(--tinta);
     font-family: var(--f-texto);
     -webkit-font-smoothing: antialiased;
@@ -86,8 +86,8 @@
   .fita .total { font-weight: 700; font-size: .8em; }
   .fita .total b { font-size: 1.25em; margin-left: .25em; }
   .plat-mercado .fita { background: var(--ml); }
-  .plat-shopee .fita { background: var(--shopee); color: #fff; }
-  .plat-tiktok .fita { background: var(--tiktok); }
+  .plat-shopee .fita { background: #d50000; color: #fff; }
+  .plat-tiktok .fita { background: #000; color: #fff; }
 
   /* seis quadros por plataforma, como no desenho do chefe */
   .corpo {
