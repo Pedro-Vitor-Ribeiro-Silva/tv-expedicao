@@ -80,7 +80,7 @@
   .fita {
     display: flex; align-items: center; justify-content: space-between;
     padding: clamp(4px, .8vh, 10px) clamp(12px, 1.4vw, 22px);
-    font: 800 clamp(18px, 3vh, 38px)/1 var(--f-display);
+    font: 800 clamp(22px, 4.2vh, 52px)/1 var(--f-display);
     text-transform: uppercase; letter-spacing: .02em;
   }
   .fita .total { font-weight: 700; font-size: .8em; }
@@ -103,7 +103,7 @@
     padding: clamp(5px, .8vh, 10px) clamp(6px, .6vw, 12px);
     background: #fff; text-align: center;
   }
-  .rotulo { font: 700 clamp(11px, 1.5vh, 18px)/1.1 var(--f-display); text-transform: uppercase; letter-spacing: .04em; color: var(--tinta-suave); }
+  .rotulo { font: 800 clamp(14px, min(2.5vh, 1.45vw), 30px)/1.05 var(--f-display); text-transform: uppercase; letter-spacing: .04em; color: var(--tinta-suave); }
   .valor { font: 800 clamp(26px, min(7.5vh, 3.15vw), 96px)/.95 var(--f-display); font-variant-numeric: tabular-nums; margin: auto 0; white-space: nowrap; }
   /* quadros de atenção: vermelhos quando há algo */
   .campo.atencao.tem { background: #ffd0cc; border-color: var(--alerta); }
@@ -114,7 +114,7 @@
     padding: clamp(5px, .8vh, 10px) clamp(12px, 1.4vw, 22px);
     display: flex; flex-wrap: wrap; align-items: center; gap: clamp(4px, .6vh, 8px) 0;
   }
-  .codigos .rotulo { margin-right: clamp(10px, 1vw, 18px); line-height: 1.05; color: #fff; opacity: .75; }
+  .codigos .rotulo { margin-right: clamp(10px, 1vw, 18px); font-size: clamp(11px, 1.5vh, 18px); line-height: 1.05; color: #fff; opacity: .75; }
   .codigos .vazio { color: #fff; opacity: .7; }
   /* cada conta: nome pequeno em cima, código grande embaixo, separadas por divisória */
   .cod {
@@ -123,7 +123,7 @@
     border-left: 2px solid rgba(255, 255, 255, .35);
   }
   .cod-conta { font: 700 clamp(11px, 1.6vh, 19px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .06em; color: #fff; white-space: nowrap; }
-  .cod code { font: 800 clamp(20px, 3.4vh, 42px)/1.05 var(--f-mono); letter-spacing: .08em; color: #fff; }
+  .cod code { font: 800 clamp(16px, min(3.4vh, 1.85vw), 42px)/1.05 var(--f-mono); letter-spacing: .08em; color: #fff; }
 
   /* ---------------------------------------------------------------- relógio */
   /* data à esquerda, logo no meio, hora à direita */
@@ -139,7 +139,7 @@
   /* ---------------------------------------------------------------- painéis da direita */
   .caixa h2 {
     margin: 0; padding: clamp(6px, 1vh, 12px) clamp(12px, 1.2vw, 20px);
-    font: 800 clamp(16px, 2.5vh, 32px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em;
+    font: 800 clamp(20px, 3.4vh, 44px)/1 var(--f-display); text-transform: uppercase; letter-spacing: .03em;
     border-bottom: 3px solid var(--tinta);
     display: flex; justify-content: space-between; align-items: baseline;
   }
@@ -149,7 +149,7 @@
   .col .coleta { flex-wrap: wrap; row-gap: 2px; }
   .col { padding: clamp(6px, .9vh, 12px) clamp(8px, .9vw, 14px); border-left: 2px solid var(--linha); overflow: hidden; display: flex; flex-direction: column; gap: clamp(3px, .5vh, 7px); }
   .col:first-child { border-left: 0; }
-  .col h3 { margin: 0 0 2px; font: 800 clamp(13px, 2vh, 24px)/1 var(--f-display); text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
+  .col h3 { margin: 0 0 2px; font: 800 clamp(15px, 2.6vh, 32px)/1 var(--f-display); text-transform: uppercase; display: flex; align-items: center; gap: 6px; }
   .col h3 .ponto { width: .7em; height: .7em; border-radius: 2px; display: inline-block; }
   .coleta { display: flex; align-items: baseline; gap: 8px; font: 600 clamp(14px, 2.2vh, 28px)/1.15 var(--f-display); font-variant-numeric: tabular-nums; }
   .coleta .conta { font: 600 clamp(10px, 1.45vh, 17px)/1 var(--f-texto); color: var(--tinta-suave); text-transform: uppercase; letter-spacing: .02em; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
